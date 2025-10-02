@@ -19,34 +19,29 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 ### **Resumen**
 
-En este informe se detalla el proceso de limpieza, preprocesamiento y análisis exploratorio de un conjunto de datos sobre la producción agrícola de una empresa colombiana. El objetivo principal es estandarizar la información, corregir inconsistencias y preparar los datos para un análisis enfocado en la producción de maíz, con el fin de identificar los departamentos más productivos, detectar outliers significativos y analizar tendencias a lo largo del tiempo.
-
+En este informe se documenta el viaje de transformar un conjunto de datos brutos de las Evaluaciones Agropecuarias Municipales (EVA) en inteligencia de negocio para una empresa agrícola líder. El objetivo es caracterizar la producción de Maíz, estandarizando la información y corrigiendo inconsistencias para construir una base sólida que permita identificar los departamentos más productivos, detectar anomalías significativas y descubrir las tendencias que definirán las estrategias futuras de la compañía.
 ***
 
 ### **Introducción**
 
-Una importante empresa agrícola nacional, con operaciones en todo el territorio colombiano, se enfrenta al desafío de optimizar su producción de maíz. La compañía cultiva una amplia variedad de vegetales, pero necesita una evaluación específica sobre el maíz para tomar decisiones estratégicas sobre inversión y logística. Con el fin de determinar qué departamentos presentan la mayor producción y eficiencia en sus cosechas, se inició un estudio a nivel nacional.
+Una importante empresa agrícola nacional, con un vasto portafolio de cultivos, se encuentra en una encrucijada estratégica. Para fortalecer su liderazgo en el mercado, necesita optimizar su operación de maíz, un pilar fundamental de su negocio. La dirección ha planteado preguntas clave: ¿En qué regiones debemos invertir? ¿Dónde se encuentran nuestras operaciones más eficientes? ¿Qué lecciones nos ha dejado la última década?
 
-Un análisis preliminar de la base de datos, consolidada por un equipo anterior, reveló múltiples inconsistencias: datos desorganizados, falta de estandarización en los nombres de las columnas, registros irrelevantes para el estudio del maíz y valores faltantes. Nuestro trabajo como equipo de análisis de datos es realizar un preprocesamiento exhaustivo para limpiar y estandarizar esta base de datos, dejándola en un estado óptimo para futuros análisis estadísticos y la generación de conclusiones fiables.
-
+Para responder, se nos ha entregado una base de datos histórica, consolidada por un equipo anterior. Sin embargo, este activo digital presenta un desafío inicial: datos desorganizados, inconsistencias y vacíos de información. Nuestra misión como equipo de análisis de datos es embarcarnos en un viaje para convertir este caos en claridad, realizando un preprocesamiento exhaustivo para forjar una herramienta de análisis fiable y, finalmente, hacer que los datos cuenten la historia de la producción de maíz en Colombia.
 ***
 
 ### **Marco Teórico y Metodología**
 
 A continuación, se describen los pasos metodológicos llevados a cabo para el preprocesamiento de los datos.
 
-### **Preprocesamiento de Datos**
+### **1.Preparación de la Data: Forjando la Herramienta**
 
-#### **1. Filtrado de la Base de Datos**
+#### **1.1 Carga de Librerías y Segmentación del Cultivo**
 
-El conjunto de datos inicial contenía registros de toda la producción agrícola de la empresa, incluyendo diferentes tipos de vegetales. Dado que el objetivo de este análisis se centra exclusivamente en el maíz, el primer paso fue filtrar la base de datos para conservar únicamente los registros correspondientes a este producto.
+Nuestra historia comienza con un universo de información sobre toda la producción agrícola de la empresa. Para encontrar las respuestas sobre el maíz, nuestro primer paso es enfocar el lente, aislando la señal de nuestro cultivo de interés del ruido generado por los demás.
 
-*1.1 Carga de Librerias y Datos*
-*Se cargan todas las librerías necesarias para el análisis y el conjunto de datos proporcionado por la empresa.*
+*Explicación del código:Se cargan las librerías que nos acompañarán en este viaje analítico. Luego, se leen los datos y, mediante filter(), se segmenta el dataframe para crear una nueva base de datos que contiene exclusivamente los registros de MAÍZ*
 ```{r message=TRUE,eval=FALSE}
-library(dplyr)
-library(stringr)
-library(ggplot2)
+library(dplyr);library(stringr);library(ggplot2)
 library(tidyverse)
 library(patchwork)
 library(tidyr)
@@ -57,25 +52,16 @@ library(plotly)
 datos <- readxl::read_excel("C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx")
 ```
 *1.2 Filtrado y Estandarización Inicial*
-*El primer paso es filtrar la base de datos para conservar únicamente los registros de MAÍZ. Posteriormente, se estandarizan los nombres de las columnas para facilitar su manipulación y se convierten los datos categóricos a mayúsculas para asegurar la consistencia.*
+*El conjunto de datos inicial contenía registros de toda la producción agrícola. Se filtra para conservar únicamente los registros correspondientes a MAÍZ.*
 ```{r message=TRUE,eval=FALSE}
+# Estandarizar 'maiz' y 'MAIZ' a un solo valor
 level_CULTIVO <- c(MAIZ = "MAIZ", maiz= "MAIZ")
 datos <- datos %>%
   mutate(CULTIVO = recode(CULTIVO, !!!level_CULTIVO))
 
 # Filtrar para quedarse solo con Maíz
-datos <- datos %>%
+datos_maiz <- datos %>%
   filter(CULTIVO == "MAIZ")
-
-# Renombrar columnas
-nuevos_nombres <- c("departamento", "municipio", "grupo", "cultivo","año",  
-                    "area_sembrada", "area_cosechada", "t_produccion",  
-                    "estado_fisico", "ciclo_cultivo")
-names(datos) <- nuevos_nombres
-
-# Estandarizar texto a mayúsculas
-datos <- datos %>%
-  mutate(departamento = str_to_upper(departamento))
 ```
 
 

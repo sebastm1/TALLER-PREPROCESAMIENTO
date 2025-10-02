@@ -1278,8 +1278,8 @@ margin-left: 0 !important;
       <strong>Introducción</strong></a></li>
       <li><a href="#marco-te%C3%B3rico-y-metodolog%C3%ADa" id="toc-marco-teórico-y-metodología"><span class="toc-section-number">0.3</span> <strong>Marco Teórico y
       Metodología</strong></a></li>
-      <li><a href="#preprocesamiento-de-datos" id="toc-preprocesamiento-de-datos"><span class="toc-section-number">0.4</span> <strong>Preprocesamiento de
-      Datos</strong></a></li>
+      <li><a href="#preparaci%C3%B3n-de-la-data-forjando-la-herramienta" id="toc-preparación-de-la-data-forjando-la-herramienta"><span class="toc-section-number">0.4</span> <strong>1.Preparación de la
+      Data: Forjando la Herramienta</strong></a></li>
       <li><a href="#procesamiento-de-datos-y-an%C3%A1lisis" id="toc-procesamiento-de-datos-y-análisis"><span class="toc-section-number">0.5</span> <strong>Procesamiento de
       Datos y Análisis</strong></a></li>
       <li><a href="#an%C3%A1lisis" id="toc-análisis"><span class="toc-section-number">1</span> <em>Análisis</em></a></li>
@@ -1304,34 +1304,33 @@ ANDRES OSPINA - 2456</p>
 <div id="resumen" class="section level3" number="0.1">
 <h3><span class="header-section-number">0.1</span>
 <strong>Resumen</strong></h3>
-<p>En este informe se detalla el proceso de limpieza, preprocesamiento y
-análisis exploratorio de un conjunto de datos sobre la producción
-agrícola de una empresa colombiana. El objetivo principal es
-estandarizar la información, corregir inconsistencias y preparar los
-datos para un análisis enfocado en la producción de maíz, con el fin de
-identificar los departamentos más productivos, detectar outliers
-significativos y analizar tendencias a lo largo del tiempo.</p>
-<hr />
+<p>En este informe se documenta el viaje de transformar un conjunto de
+datos brutos de las Evaluaciones Agropecuarias Municipales (EVA) en
+inteligencia de negocio para una empresa agrícola líder. El objetivo es
+caracterizar la producción de Maíz, estandarizando la información y
+corrigiendo inconsistencias para construir una base sólida que permita
+identificar los departamentos más productivos, detectar anomalías
+significativas y descubrir las tendencias que definirán las estrategias
+futuras de la compañía. ***</p>
 </div>
 <div id="introducción" class="section level3" number="0.2">
 <h3><span class="header-section-number">0.2</span>
 <strong>Introducción</strong></h3>
-<p>Una importante empresa agrícola nacional, con operaciones en todo el
-territorio colombiano, se enfrenta al desafío de optimizar su producción
-de maíz. La compañía cultiva una amplia variedad de vegetales, pero
-necesita una evaluación específica sobre el maíz para tomar decisiones
-estratégicas sobre inversión y logística. Con el fin de determinar qué
-departamentos presentan la mayor producción y eficiencia en sus
-cosechas, se inició un estudio a nivel nacional.</p>
-<p>Un análisis preliminar de la base de datos, consolidada por un equipo
-anterior, reveló múltiples inconsistencias: datos desorganizados, falta
-de estandarización en los nombres de las columnas, registros
-irrelevantes para el estudio del maíz y valores faltantes. Nuestro
-trabajo como equipo de análisis de datos es realizar un preprocesamiento
-exhaustivo para limpiar y estandarizar esta base de datos, dejándola en
-un estado óptimo para futuros análisis estadísticos y la generación de
-conclusiones fiables.</p>
-<hr />
+<p>Una importante empresa agrícola nacional, con un vasto portafolio de
+cultivos, se encuentra en una encrucijada estratégica. Para fortalecer
+su liderazgo en el mercado, necesita optimizar su operación de maíz, un
+pilar fundamental de su negocio. La dirección ha planteado preguntas
+clave: ¿En qué regiones debemos invertir? ¿Dónde se encuentran nuestras
+operaciones más eficientes? ¿Qué lecciones nos ha dejado la última
+década?</p>
+<p>Para responder, se nos ha entregado una base de datos histórica,
+consolidada por un equipo anterior. Sin embargo, este activo digital
+presenta un desafío inicial: datos desorganizados, inconsistencias y
+vacíos de información. Nuestra misión como equipo de análisis de datos
+es embarcarnos en un viaje para convertir este caos en claridad,
+realizando un preprocesamiento exhaustivo para forjar una herramienta de
+análisis fiable y, finalmente, hacer que los datos cuenten la historia
+de la producción de maíz en Colombia. ***</p>
 </div>
 <div id="marco-teórico-y-metodología" class="section level3" number="0.3">
 <h3><span class="header-section-number">0.3</span> <strong>Marco Teórico
@@ -1339,53 +1338,42 @@ y Metodología</strong></h3>
 <p>A continuación, se describen los pasos metodológicos llevados a cabo
 para el preprocesamiento de los datos.</p>
 </div>
-<div id="preprocesamiento-de-datos" class="section level3" number="0.4">
-<h3><span class="header-section-number">0.4</span>
-<strong>Preprocesamiento de Datos</strong></h3>
-<div id="filtrado-de-la-base-de-datos" class="section level4" number="0.4.1">
-<h4><span class="header-section-number">0.4.1</span> <strong>1. Filtrado
-de la Base de Datos</strong></h4>
-<p>El conjunto de datos inicial contenía registros de toda la producción
-agrícola de la empresa, incluyendo diferentes tipos de vegetales. Dado
-que el objetivo de este análisis se centra exclusivamente en el maíz, el
-primer paso fue filtrar la base de datos para conservar únicamente los
-registros correspondientes a este producto.</p>
-<p><em>1.1 Carga de Librerias y Datos</em> <em>Se cargan todas las
-librerías necesarias para el análisis y el conjunto de datos
-proporcionado por la empresa.</em></p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
-<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">library</span>(naniar)</span>
-<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="fu">library</span>(corrplot)</span>
-<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="fu">library</span>(mice)</span>
-<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="fu">library</span>(plotly)</span>
-<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>datos <span class="ot">&lt;-</span> readxl<span class="sc">::</span><span class="fu">read_excel</span>(<span class="st">&quot;C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx&quot;</span>)</span></code></pre></div>
-<p><em>1.2 Filtrado y Estandarización Inicial</em> <em>El primer paso es
-filtrar la base de datos para conservar únicamente los registros de
-MAÍZ. Posteriormente, se estandarizan los nombres de las columnas para
-facilitar su manipulación y se convierten los datos categóricos a
-mayúsculas para asegurar la consistencia.</em></p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>level_CULTIVO <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">MAIZ =</span> <span class="st">&quot;MAIZ&quot;</span>, <span class="at">maiz=</span> <span class="st">&quot;MAIZ&quot;</span>)</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>datos <span class="ot">&lt;-</span> datos <span class="sc">%&gt;%</span></span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">CULTIVO =</span> <span class="fu">recode</span>(CULTIVO, <span class="sc">!!!</span>level_CULTIVO))</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co"># Filtrar para quedarse solo con Maíz</span></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>datos <span class="ot">&lt;-</span> datos <span class="sc">%&gt;%</span></span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  <span class="fu">filter</span>(CULTIVO <span class="sc">==</span> <span class="st">&quot;MAIZ&quot;</span>)</span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a></span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co"># Renombrar columnas</span></span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>nuevos_nombres <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;departamento&quot;</span>, <span class="st">&quot;municipio&quot;</span>, <span class="st">&quot;grupo&quot;</span>, <span class="st">&quot;cultivo&quot;</span>,<span class="st">&quot;año&quot;</span>,  </span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>                    <span class="st">&quot;area_sembrada&quot;</span>, <span class="st">&quot;area_cosechada&quot;</span>, <span class="st">&quot;t_produccion&quot;</span>,  </span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>                    <span class="st">&quot;estado_fisico&quot;</span>, <span class="st">&quot;ciclo_cultivo&quot;</span>)</span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="fu">names</span>(datos) <span class="ot">&lt;-</span> nuevos_nombres</span>
-<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a></span>
-<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co"># Estandarizar texto a mayúsculas</span></span>
-<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>datos <span class="ot">&lt;-</span> datos <span class="sc">%&gt;%</span></span>
-<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">departamento =</span> <span class="fu">str_to_upper</span>(departamento))</span></code></pre></div>
+<div id="preparación-de-la-data-forjando-la-herramienta" class="section level3" number="0.4">
+<h3><span class="header-section-number">0.4</span> <strong>1.Preparación
+de la Data: Forjando la Herramienta</strong></h3>
+<div id="carga-de-librerías-y-segmentación-del-cultivo" class="section level4" number="0.4.1">
+<h4><span class="header-section-number">0.4.1</span> <strong>1.1 Carga
+de Librerías y Segmentación del Cultivo</strong></h4>
+<p>Nuestra historia comienza con un universo de información sobre toda
+la producción agrícola de la empresa. Para encontrar las respuestas
+sobre el maíz, nuestro primer paso es enfocar el lente, aislando la
+señal de nuestro cultivo de interés del ruido generado por los
+demás.</p>
+<p><em>Explicación del código:Se cargan las librerías que nos
+acompañarán en este viaje analítico. Luego, se leen los datos y,
+mediante filter(), se segmenta el dataframe para crear una nueva base de
+datos que contiene exclusivamente los registros de MAÍZ</em></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(dplyr);<span class="fu">library</span>(stringr);<span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">library</span>(naniar)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="fu">library</span>(corrplot)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">library</span>(mice)</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="fu">library</span>(plotly)</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>datos <span class="ot">&lt;-</span> readxl<span class="sc">::</span><span class="fu">read_excel</span>(<span class="st">&quot;C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx&quot;</span>)</span></code></pre></div>
+<p><em>1.2 Filtrado y Estandarización Inicial</em> <em>El conjunto de
+datos inicial contenía registros de toda la producción agrícola. Se
+filtra para conservar únicamente los registros correspondientes a
+MAÍZ.</em></p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Estandarizar &#39;maiz&#39; y &#39;MAIZ&#39; a un solo valor</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>level_CULTIVO <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">MAIZ =</span> <span class="st">&quot;MAIZ&quot;</span>, <span class="at">maiz=</span> <span class="st">&quot;MAIZ&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>datos <span class="ot">&lt;-</span> datos <span class="sc">%&gt;%</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">CULTIVO =</span> <span class="fu">recode</span>(CULTIVO, <span class="sc">!!!</span>level_CULTIVO))</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co"># Filtrar para quedarse solo con Maíz</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>datos_maiz <span class="ot">&lt;-</span> datos <span class="sc">%&gt;%</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="fu">filter</span>(CULTIVO <span class="sc">==</span> <span class="st">&quot;MAIZ&quot;</span>)</span></code></pre></div>
 </div>
 <div id="estandarización-de-nombres-de-columnas" class="section level4" number="0.4.2">
 <h4><span class="header-section-number">0.4.2</span> <strong>2.
