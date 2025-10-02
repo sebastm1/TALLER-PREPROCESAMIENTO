@@ -27,7 +27,6 @@ En este informe se documenta el viaje de transformar un conjunto de datos brutos
 Una importante empresa agrícola nacional, con un vasto portafolio de cultivos, se encuentra en una encrucijada estratégica. Para fortalecer su liderazgo en el mercado, necesita optimizar su operación de maíz, un pilar fundamental de su negocio. La dirección ha planteado preguntas clave: ¿En qué regiones debemos invertir? ¿Dónde se encuentran nuestras operaciones más eficientes? ¿Qué lecciones nos ha dejado la última década?
 
 Para responder, se nos ha entregado una base de datos histórica, consolidada por un equipo anterior. Sin embargo, este activo digital presenta un desafío inicial: datos desorganizados, inconsistencias y vacíos de información. Nuestra misión como equipo de análisis de datos es embarcarnos en un viaje para convertir este caos en claridad, realizando un preprocesamiento exhaustivo para forjar una herramienta de análisis fiable y, finalmente, hacer que los datos cuenten la historia de la producción de maíz en Colombia.
-***
 
 ### **Preparación de la Data: Forjando la Herramienta**
 
@@ -98,7 +97,7 @@ imputR <- mice(datos, m = 5, maxit = 5, seed = 123, print = F)
 Datos_ImputR <- complete(imputR)
 ```
 
-### **Preparación de la Data: Forjando la Herramienta**
+### **Procesamiento de Datos: Extrayendo las Respuestas**
 
 Con nuestra herramienta de datos ya forjada y afinada, comienza la fase de exploración. Ahora podemos interrogar a los datos para que nos revelen sus secretos y nos guíen hacia decisiones de negocio más inteligentes.
 
