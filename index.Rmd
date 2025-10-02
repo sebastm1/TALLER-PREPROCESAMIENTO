@@ -10,6 +10,7 @@ output:
     number_sections: true
     css: styles.css
     highlight: "pygments"
+favicon: "LOGO.png"
 ---
 
 ```{r setup, include=FALSE}
