@@ -3,14 +3,13 @@ title: "ANÁLISIS ESTADÍSTICO PRODUCCIÓN MAÍZ"
 author: 
   - JHON SEBASTIAN VALENCIA URBANO - 2456780
   - JHON JAIRO PANTOJA ALVAREZ - 2355
-  - JAIME ANDRES OSPINA - 2456
+  - JAIME ANDRES OSPINA VARGAS - 2456578
 output: 
   rmdformats::readthedown:
-    toc_depth: 5
+    toc_depth: 4
     number_sections: true
     css: styles.css
     highlight: "pygments"
-favicon: "LOGO.png"
 ---
 
 ```{r setup, include=FALSE}
@@ -28,7 +27,7 @@ Una importante empresa agrícola nacional, con un vasto portafolio de cultivos, 
 
 Para responder, se nos ha entregado una base de datos histórica, consolidada por un equipo anterior. Sin embargo, este activo digital presenta un desafío inicial: datos desorganizados, inconsistencias y vacíos de información. Nuestra misión como equipo de análisis de datos es embarcarnos en un viaje para convertir este caos en claridad, realizando un preprocesamiento exhaustivo para forjar una herramienta de análisis fiable y, finalmente, hacer que los datos cuenten la historia de la producción de maíz en Colombia.
 
-### **Preparación de la Data: Forjando la Herramienta**
+### **Forjando la Herramienta**
 
 Todo gran análisis comienza con datos de alta calidad. Esta primera fase es la más crítica: es donde transformamos la materia prima —un conjunto de datos crudo y desordenado— en una base de datos limpia, coherente y lista para ser interrogada. Es el equivalente a afinar los instrumentos antes de un concierto.
 
@@ -97,7 +96,7 @@ imputR <- mice(datos, m = 5, maxit = 5, seed = 123, print = F)
 Datos_ImputR <- complete(imputR)
 ```
 
-### **Procesamiento de Datos: Extrayendo las Respuestas**
+### **Extrayendo las Respuestas**
 
 Con nuestra herramienta de datos ya forjada y afinada, comienza la fase de exploración. Ahora podemos interrogar a los datos para que nos revelen sus secretos y nos guíen hacia decisiones de negocio más inteligentes.
 

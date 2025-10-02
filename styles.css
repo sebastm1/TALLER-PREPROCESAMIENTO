@@ -6,3 +6,14 @@ h1, h2, h3 {
   text-align: center;
   font-weight: bold;
 }
+/* Forzar que los encabezados h4 aparezcan visibles en el TOC lateral */
+.tocify .tocify-item > .tocify-subheader .tocify-subheader {
+  display: block !important;
+}
+
+/* Ajustar estilo de los h4 en el TOC */
+.tocify .tocify-subheader .tocify-subheader .tocify-item {
+  margin-left: 20px;   /* sangría */
+  font-size: 90%;      /* más pequeño */
+  color: #a94442;      /* rojo vino, cambia si quieres */
+}
