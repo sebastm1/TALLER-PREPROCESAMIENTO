@@ -1,26 +1,23 @@
 ---
-title: "<img src='LOGO.png' height='40' style='vertical-align: middle; margin-right: 15px;'> ANÁLISIS ESTADÍSTICO PRODUCCIÓN MAÍZ"
+title: "ANÁLISIS ESTADÍSTICO PRODUCCIÓN MAÍZ"
+author: 
+  - JHON SEBASTIAN VALENCIA URBANO - 2456780
+  - JHON JAIRO PANTOJA ALVAREZ - 2355
+  - JAIME ANDRES OSPINA - 2456
 output: 
-  html_document:
-    theme: united
+  rmdformats::readthedown:
+    toc_depth: 3
+    number_sections: true
+    css: styles.css
+    highlight: "pygments"
 ---
-  <style>
-    body {
-      text-align: justify;
-    }
-    h1, h2, h3 {
-      text-align: center;
-      font-weight: bold;
-    }
-  </style>
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
 <div style="text-align: center;">
-  JHON SEBASTIAN VALENCIA URBANO - 2456780 <br>
-  JHON JAIRO PANTOJA ALVAREZ - 2355 <br>
-  JAIME ANDRES OSPINA - 2456 <br>
+<img src='LOGO.png' height='40' style='vertical-align: middle; margin-right: 15px;'>
 </div>
-
-<br>
 
 ### **Resumen**
 
