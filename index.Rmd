@@ -6,7 +6,7 @@ author:
   - JAIME ANDRES OSPINA - 2456
 output: 
   rmdformats::readthedown:
-    toc_depth: 3
+    toc_depth: 5
     number_sections: true
     css: styles.css
     highlight: "pygments"
@@ -112,22 +112,7 @@ datos_freq <- Datos_ImputR %>%
 
 #grafico de distribucion de muestra
 plot_ly(datos_freq, labels = ~departamento, values = ~n, type = "pie") %>%
-  layout(
-    title = list(
-      text = "<b>DISTRIBUCIÓN DE LA MUESTRA POR DEPARTAMENTOS</b>", #
-      font = list(
-        color = "darkred",  
-        size = 15      
-      ),
-      x = 0.5,           
-      xanchor = "center" 
-    )
-  )
-
-
+  layout(title = list(text = "<b>DISTRIBUCIÓN DE LA MUESTRA POR DEPARTAMENTOS</b>",
+      font = list(color = "darkred",  size = 15),x = 0.5, xanchor = "center"))
 ```
-
-
-## *Análisis*
-En este espacio, describe lo que observas en el gráfico. Por ejemplo: ¿Hay departamentos con muchos más registros que otros? ¿La muestra está balanceada o desbalanceada? Esto puede indicar qué departamentos tienen una mayor frecuencia de reportes o si la recolección de datos ha sido más intensa en ciertas zonas del país.
 
