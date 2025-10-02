@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 ### **Resumen**
 
-En este informe se detalla el proceso de limpieza, preprocesamiento y análisis exploratorio de un conjunto de datos sobre la producción agrícola de una empresa colombiana. El objetivo principal es estandarizar la información, corregir inconsistencias y preparar los datos para un análisis enfocado en la producción de maíz, con el fin de identificar los departamentos más productivos y eficientes. Se abordan técnicas como el filtrado de datos, la estandarización de variables, la creación de nuevas métricas como el rendimiento y el manejo de valores faltantes.
+En este informe se detalla el proceso de limpieza, preprocesamiento y análisis exploratorio de un conjunto de datos sobre la producción agrícola de una empresa colombiana. El objetivo principal es estandarizar la información, corregir inconsistencias y preparar los datos para un análisis enfocado en la producción de maíz, con el fin de identificar los departamentos más productivos, detectar outliers significativos y analizar tendencias a lo largo del tiempo.
 
 ***
 
@@ -41,7 +41,7 @@ A continuación, se describen los pasos metodológicos llevados a cabo para el p
 El conjunto de datos inicial contenía registros de toda la producción agrícola de la empresa, incluyendo diferentes tipos de vegetales. Dado que el objetivo de este análisis se centra exclusivamente en el maíz, el primer paso fue filtrar la base de datos para conservar únicamente los registros correspondientes a este producto.
 
 *1.1 Carga de Librerias y Datos*
-*Como primer paso para se realizo la carga de todos las librerias necesarias a usar y de la base de datos proporcionada por la empresa generando una variable de facil manejo.*
+*Se cargan todas las librerías necesarias para el análisis y el conjunto de datos proporcionado por la empresa.*
 ```{r message=TRUE,eval=FALSE}
 library(dplyr)
 library(stringr)
@@ -54,6 +54,27 @@ library(corrplot)
 library(mice)
 library(plotly)
 datos <- readxl::read_excel("C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx")
+```
+*1.2 Filtrado y Estandarización Inicial*
+*El primer paso es filtrar la base de datos para conservar únicamente los registros de MAÍZ. Posteriormente, se estandarizan los nombres de las columnas para facilitar su manipulación y se convierten los datos categóricos a mayúsculas para asegurar la consistencia.*
+```{r message=TRUE,eval=FALSE}
+level_CULTIVO <- c(MAIZ = "MAIZ", maiz= "MAIZ")
+datos <- datos %>%
+  mutate(CULTIVO = recode(CULTIVO, !!!level_CULTIVO))
+
+# Filtrar para quedarse solo con Maíz
+datos <- datos %>%
+  filter(CULTIVO == "MAIZ")
+
+# Renombrar columnas
+nuevos_nombres <- c("departamento", "municipio", "grupo", "cultivo","año",  
+                    "area_sembrada", "area_cosechada", "t_produccion",  
+                    "estado_fisico", "ciclo_cultivo")
+names(datos) <- nuevos_nombres
+
+# Estandarizar texto a mayúsculas
+datos <- datos %>%
+  mutate(departamento = str_to_upper(departamento))
 ```
 
 
