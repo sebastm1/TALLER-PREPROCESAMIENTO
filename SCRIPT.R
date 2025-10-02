@@ -1,8 +1,12 @@
 
 library(dplyr)
-
-
-
+library(stringr)
+library(ggplot2)
+library(tidyverse)
+library(patchwork)
+library(tidyr)
+library(naniar)
+library(corrplot)
 datos <- readxl::read_excel("C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx")
 table(datos$CULTIVO)
 level_CULTIVO <- c(MAIZ = "MAIZ", maiz= "MAIZ")
@@ -11,24 +15,18 @@ datos <- datos %>%
 datos <- datos %>%
   filter(CULTIVO == "MAIZ")
 table(datos$DEPARTAMENTO)
-
 ncol(datos)
-nuevos_nombres <- c("departamento", "municipio", "grupo", "cultivo", "año", 
+nuevos_nombres <- c("departamento", "municipio", "grupo", "cultivo","año", 
                     "area_sembrada", "area_cosechada", "t_produccion", 
                     "estado_fisico", "ciclo_cultivo")
 
 names(datos) <- nuevos_nombres
-
-
 summary(datos)
-library(stringr)
-library(ggplot2)
-
+vis_miss(datos)
 
 datos <- datos %>%
   mutate(departamento = str_to_upper(departamento))
 table(datos$departamento)
-
 
 datos <- datos %>%
   mutate(
@@ -38,6 +36,7 @@ datos <- datos %>%
       TRUE ~ t_produccion / area_cosechada
     )
   )
+
 p1 <-ggplot(data = datos, aes(x = area_cosechada, y = t_produccion)) +
   geom_point(aes(color = departamento), alpha = 0.6, size = 3) +
   geom_smooth(method = "lm", color = "firebrick", se = FALSE) +
@@ -48,22 +47,21 @@ p1 <-ggplot(data = datos, aes(x = area_cosechada, y = t_produccion)) +
     color = "Departamento"
   ) +
   theme_minimal()
-
-
-datos_imputados <- datos_imputados %>%
+datos_imputados <- datos %>%
+  group_by(departamento) %>%
   mutate(
-    rendimiento = case_when(
-      is.na(t_produccion) | is.na(area_cosechada) ~ NA_real_,
-      area_cosechada == 0 ~ 0,
-      TRUE ~ t_produccion / area_cosechada
-    )
-  )
+    t_produccion = ifelse(is.na(t_produccion), 
+                          median(t_produccion, na.rm = TRUE), 
+                          t_produccion)
+  ) %>%
+  ungroup()
 
 datos_imputados <- datos_imputados %>%
   mutate(
     tipo_dato = if_else(is.na(datos$t_produccion), 
                         "Imputado", 
                         "Original"))
+
 p2 <- ggplot(data = datos_imputados, aes(x = area_cosechada, y = t_produccion)) +
   geom_point(aes(color = departamento, shape = tipo_dato), alpha = 0.7, size = 3.5) +
 geom_smooth(method = "lm", color = "firebrick", se = FALSE) +
@@ -76,15 +74,20 @@ geom_smooth(method = "lm", color = "firebrick", se = FALSE) +
     shape = "Tipo de Dato"
   ) +
   theme_minimal()
-library(tidyverse)
+
 
 print ( p1 + p2)
 
+ggplot(datos, aes(x = departamento, y = rendimiento)) +
+  geom_boxplot() +
+  labs(
+    title = "Distribución del Rendimiento por Departamento",
+    x = "Departamento",
+    y = "Rendimiento (unidades)"
+  )
 
-library(ggplot2)
 
-# 2. Crear el gráfico
-p4 <- ggplot(datos_imputados, aes(x = departamento, y = rendimiento)) +
+ ggplot(datos_imputados, aes(x = departamento, y = rendimiento)) +
   geom_boxplot() +
   labs(
     title = "Distribución del Rendimiento por Departamento",
@@ -94,6 +97,14 @@ p4 <- ggplot(datos_imputados, aes(x = departamento, y = rendimiento)) +
 
 datos_limpios <- datos %>%
   filter(!is.na(datos$rendimiento))
+
+ggplot(datos_limpios, aes(x = departamento, y = rendimiento)) +
+  geom_boxplot() +
+  labs(
+    title = "Distribución del Rendimiento por Departamento",
+    x = "Departamento",
+    y = "Rendimiento (unidades)"
+  )
 
 
 p4 <- ggplot(Datos_ImputR, aes(x = departamento, y = rendimiento)) +
@@ -116,33 +127,23 @@ print(p4+ p3)
 
 library(mice)
 
-# Usar el método por defecto (pmm), que es más robusto y no creará negativos
-imputR = mice(datos, maxit = 5, seed = 123, print = F) # Aumenté maxit a 5, que es el default y es más estable
-
-# Completar el dataset
+imputR = mice(datos, maxit = 5, seed = 123, print = F) 
 Datos_ImputR = complete(imputR)
-
-# Comprobar los resultados (ahora no deberían tener negativos)
 summary(Datos_ImputR)
 
+id = which(abs(scale(Datos_ImputR$rendimiento))>3)
+Datos_ImputR$rendimiento[id]
+
+
 vis_miss(datos_imputados)
-library(naniar)
+
 vis_miss(datos)
-library(dplyr)
-datos_imputados <- datos %>%
-  group_by(departamento) %>%
-  mutate(
-    t_produccion = ifelse(is.na(t_produccion), 
-                                  median(t_produccion, na.rm = TRUE), 
-                                  t_produccion)
-  ) %>%
-  ungroup()
+
 
 
 vis_miss(datos_imputados)
 
 
-library(corrplot)
 
 
 datos %>% 
@@ -152,13 +153,15 @@ datos <- na.omit(datos)
 vis_miss(datos)
 
 library(dplyr)
-library(plotly)
+library(plo*tly)
 
 datos_freq <- datos %>%
   count(departamento)
 
 Dist <- plot_ly(datos_freq, labels = ~departamento, values = ~n, type = "pie") %>%
   layout(title = "Distribución de la muestra por departamentos")
+
+print(Dist)
 
 library(dplyr)
 
@@ -169,26 +172,18 @@ vis_miss(datos)
 print(filas_faltantes_rendimiento, n = Inf)
 
 
-# Instala ggplot2 si no lo tienes, para gráficos más estéticos
-# install.packages("ggplot2")
-
-library(dplyr)
-library(ggplot2)
-library(patchwork)
-
   
  
 
-  
-  # Imprimir un resumen estadístico de los datos limpios
+
   cat("Resumen estadístico del rendimiento (sin datos faltantes):\n")
   print(summary(datos_limpios$rendimiento))
   
 
 datos_imputados <- datos %>%
-  mutate(rendimiento = if_else(is.na(rendimiento),      # Condición: si rendimiento es NA...
-                               mean(rendimiento, na.rm = TRUE), # ...reemplázalo con la media...
-                               rendimiento))                  # ...de lo contrario, déjalo como está.
+  mutate(rendimiento = if_else(is.na(rendimiento),     
+                               mean(rendimiento, na.rm = TRUE),
+                               rendimiento))                 
 
 
 p4 <- ggplot(datos_imputados, aes(x = rendimiento)) +
@@ -203,8 +198,7 @@ print(p4)
 library(dplyr)
 library(ggplot2)
 
-# ---- PASO 1: Crear una columna para identificar los puntos imputados ----
-# Usamos el data frame original 'datos_solo_maiz' para saber dónde estaban los NA
+
 library(dplyr)
 datos_para_grafico <- datos_imputados_por_depto %>%
   mutate(
@@ -218,7 +212,7 @@ datos_para_grafico <- datos_imputados_por_depto %>%
 datos_para_grafico2 <- datos_imputados_lm %>%
   mutate( tipo_dato = if_else(is.na(datos$rendimiento), "Imputado", "Original"))
 
-# ---- PASO 2: Crear el gráfico usando la nueva columna para la forma ----
+
 
 
 
@@ -238,27 +232,26 @@ p4 <- ggplot(data = datos_para_grafico2, aes(x = area_cosechada, y = rendimiento
 
 p5_modificado <- ggplot(data = datos_para_grafico2, aes(x = area_cosechada, y = rendimiento_)) +
   
-  # La clave está aquí: mapeamos 'color' a departamento y 'shape' a tipo_dato
+
   geom_point(aes(color = departamento, shape = tipo_dato), alpha = 0.7, size = 4) +
   
   geom_smooth(method = "lm", color = "firebrick", se = FALSE) +
   
-  # Agregamos una leyenda para la forma
+
   labs(
     title = "Relación entre Área Cosechada y Producción (con Datos Imputados)",
     subtitle = "Los puntos imputados se muestran con una forma diferente",
     x = "Área Cosechada (Hectáreas)",
     y = "Producción (Toneladas)",
     color = "Departamento",
-    shape = "Tipo de Dato" # Título para la nueva leyenda
+    shape = "Tipo de Dato" 
   ) +
-  
-  # Escala manual para que los puntos sean más claros (círculo y triángulo)
+
   scale_shape_manual(values = c("Imputado" = 17, "Original" = 16)) +
   
   theme_minimal()
 
-# Mostrar el gráfico modificado
+
 library(tidyverse)
 print(p5_modificado + p5)
 
@@ -306,17 +299,17 @@ datos_imputados_por_depto <- datos %>%
   ungroup()
 
 
-# 1. Identificar las filas que tienen datos faltantes en 'rendimiento'
+
 indices_faltantes <- which(is.na(datos$rendimiento))
 
-# 2. Entrenar el modelo usando SOLAMENTE las filas completas
+
 modelo_para_imputar <- lm(rendimiento ~ area_cosechada + departamento + año, 
                           data = datos[-indices_faltantes, ])
 
-# 3. Predecir los valores de rendimiento para las filas que tenían NA
+
 predicciones <- predict(modelo_para_imputar, newdata = datos[indices_faltantes, ])
 
-# 4. Crear un nuevo data frame y rellenar los NA con las predicciones
+
 datos_imputados_lm <- datos
 datos_imputados_lm$rendimiento[indices_faltantes] <- predicciones
 
@@ -324,25 +317,15 @@ datos_imputados_lm$rendimiento[indices_faltantes] <- predicciones
 
 print(p6 + p5)
 
-library(patchwork)
 
-
-
-# Cargar las librerías necesarias
-library(ggplot2)
-library(dplyr)
-library(patchwork) # La clave para unir los gráficos
-
-# 1. Obtenemos una lista de los departamentos únicos
 lista_departamentos <- unique(datos$departamento)
 
-# 2. Creamos una lista vacía para guardar cada gráfico
+
 lista_de_plots <- list()
 
-# 3. Hacemos un bucle que recorra cada departamento
+
 for (depto in lista_departamentos) {
   
-  # Creamos un gráfico solo para el departamento actual
   p <- datos %>%
     filter(departamento == depto) %>%
     ggplot(aes(x = area_cosechada, y = rendimiento_imputado)) +
@@ -351,12 +334,127 @@ for (depto in lista_departamentos) {
     ggtitle(depto) +
     theme_minimal()
   
-  # 4. Guardamos el gráfico 'p' en nuestra lista
   lista_de_plots[[depto]] <- p
 }
 
-# 5. Usamos patchwork para organizar y mostrar todos los gráficos de la lista
 wrap_plots(lista_de_plots)
 
 
 vis_miss(datos)
+
+
+lista_departamentos <- unique(Datos_ImputR$departamento)
+
+
+for (depto in lista_departamentos) {
+  
+  
+  datos_filtrados <- subset(Datos_ImputR, departamento == depto)
+  
+  if (.Platform$OS.type == "windows") x11() else if (.Platform$OS.type == "unix") x11()
+  
+  par(mfrow = c(3, 1))
+  
+  with(datos_filtrados, {
+
+    hist(rendimiento, 
+         freq = FALSE, 
+         col = "skyblue", 
+         breaks = 15, 
+         main = paste("Histograma de Rendimiento en", depto))
+    
+    boxplot(rendimiento, 
+            horizontal = TRUE, 
+            col = "orange",
+            main = paste("Boxplot de Rendimiento en", depto))
+  
+    hist(scale(rendimiento), 
+         freq = FALSE, 
+         col = "lightgreen", 
+         breaks = 15,
+         main = paste("Rendimiento Estandarizado en", depto))
+  })
+}
+library(dplyr)
+ggplot(Datos_ImputR, aes(x = reorder(departamento, rendimiento, FUN = median), 
+                          y = rendimiento, 
+                          fill = departamento)) +
+  geom_violin() + 
+  geom_boxplot(width = 0.1, fill = "white") + 
+  coord_flip() + 
+  labs(
+    title = "Comparación de Distribuciones de Rendimiento por Departamento",
+    x = "Departamento",
+    y = "Rendimiento (Ton/Ha)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+id.out.uni=function(x,method=c("Standarized","Tukey","Cook")){
+  id.out=NULL
+  if(method=="Standarized"){id.out=which(abs(scale(x))>3)}
+  else if(method=="Tukey"){id.out=which(x%in%(boxplot.stats(x)$out))}
+  else if(method=="Cook"){model=lm(x~1);CD=cooks.distance(model)
+  id.out=unname(which(CD>4*mean(CD)))}
+  return(id.out)
+}
+
+names(Datos)
+
+id.out.uni(Datos_ImputR$rendimiento,method="Standarized")
+id.out.uni(Datos_ImputR$rendimiento,method="Tukey")
+id.out.uni(Datos_ImputR$rendimiento,method="Cook")
+
+names(Datos)
+
+
+windows()
+par(mfrow=c(2,5))
+lapply(Datos_ImputR[,-(1:3)],boxplot,col="Blue")
+
+out_Stand = lapply(Datos[,-(1:3)],id.out.uni,method="Standarized")
+out_Tukey = lapply(Datos[,-(1:3)],id.out.uni,method="Tukey")
+out_Cook = lapply(Datos[,-(1:3)],id.out.uni,method="Cook")
+
+
+datos_comparacion <- Datos_ImputR %>%
+  filter(año %in% c(2007, 2017)) %>%
+  group_by(departamento, año) %>%
+  summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')
+ggplot(data = datos_comparacion, aes(x = departamento, y = rendimiento_mediano, fill = as.factor(año))) +
+  geom_col(position = "dodge") +
+  coord_flip() + 
+  scale_fill_manual(name = "Año", values = c("2007" = "orange", "2017" = "skyblue")) +
+  labs(
+    title = "Comparación del Rendimiento Mediano por Departamento",
+    subtitle = "Años 2007 vs. 2017",
+    x = "Departamento",
+    y = "Rendimiento Mediano (Ton/Ha)"
+  ) +
+  theme_minimal()
+
+tendencia_anual <- Datos_ImputR %>%
+  group_by(año, departamento) %>%
+  summarise(
+    rendimiento_mediano = median(rendimiento, na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+ggplot(data = tendencia_anual, aes(x = año, y = rendimiento_mediano, color = departamento)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2.5) +
+  
+  scale_x_continuous(breaks = unique(tendencia_anual$año)) +
+  
+  labs(
+    title = "Tendencia del Rendimiento Mediano del Maíz a través de los Años",
+    subtitle = "Cada línea representa un departamento",
+    x = "Año",
+    y = "Rendimiento Mediano (Toneladas/Hectárea)",
+    color = "Departamento"
+  ) +
+  theme_minimal() +
+  
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 0, hjust = 1))
