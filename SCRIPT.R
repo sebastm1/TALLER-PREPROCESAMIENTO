@@ -7,6 +7,8 @@ library(patchwork)
 library(tidyr)
 library(naniar)
 library(corrplot)
+library(mice)
+library(plotly)
 datos <- readxl::read_excel("C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx")
 table(datos$CULTIVO)
 level_CULTIVO <- c(MAIZ = "MAIZ", maiz= "MAIZ")
@@ -37,6 +39,10 @@ datos <- datos %>%
     )
   )
 
+filas_faltantes_rendimiento <- datos %>% 
+  filter(is.na(rendimiento))
+print(filas_faltantes_rendimiento, n = Inf)
+
 p1 <-ggplot(data = datos, aes(x = area_cosechada, y = t_produccion)) +
   geom_point(aes(color = departamento), alpha = 0.6, size = 3) +
   geom_smooth(method = "lm", color = "firebrick", se = FALSE) +
@@ -62,7 +68,7 @@ datos_imputados <- datos_imputados %>%
                         "Imputado", 
                         "Original"))
 
-p2 <- ggplot(data = datos_imputados, aes(x = area_cosechada, y = t_produccion)) +
+ ggplot(data = datos_imputados, aes(x = area_cosechada, y = t_produccion)) +
   geom_point(aes(color = departamento, shape = tipo_dato), alpha = 0.7, size = 3.5) +
 geom_smooth(method = "lm", color = "firebrick", se = FALSE) +
   scale_shape_manual(values = c("Original" = 16, "Imputado" = 17)) +
@@ -106,6 +112,9 @@ ggplot(datos_limpios, aes(x = departamento, y = rendimiento)) +
     y = "Rendimiento (unidades)"
   )
 
+imputR = mice(datos, maxit = 5, seed = 123, print = F) 
+Datos_ImputR = complete(imputR)
+summary(Datos_ImputR)
 
 p4 <- ggplot(Datos_ImputR, aes(x = departamento, y = rendimiento)) +
   geom_boxplot() +
@@ -116,46 +125,8 @@ p4 <- ggplot(Datos_ImputR, aes(x = departamento, y = rendimiento)) +
   )
 vis_miss(Datos_ImputR)
 
-p3 <- ggplot(datos_limpios, aes(x = departamento, y = rendimiento)) +
-  geom_boxplot() +
-  labs(
-    title = "Distribución del Rendimiento por Departamento",
-    x = "Departamento",
-    y = "Rendimiento (unidades)"
-  )
-print(p4+ p3)
 
-library(mice)
-
-imputR = mice(datos, maxit = 5, seed = 123, print = F) 
-Datos_ImputR = complete(imputR)
-summary(Datos_ImputR)
-
-id = which(abs(scale(Datos_ImputR$rendimiento))>3)
-Datos_ImputR$rendimiento[id]
-
-
-vis_miss(datos_imputados)
-
-vis_miss(datos)
-
-
-
-vis_miss(datos_imputados)
-
-
-
-
-datos %>% 
-  filter(is.na(datos_imputados$t_produccion))
-
-datos <- na.omit(datos)
-vis_miss(datos)
-
-library(dplyr)
-library(plo*tly)
-
-datos_freq <- datos %>%
+datos_freq <- Datos_ImputR %>%
   count(departamento)
 
 Dist <- plot_ly(datos_freq, labels = ~departamento, values = ~n, type = "pie") %>%
@@ -163,99 +134,7 @@ Dist <- plot_ly(datos_freq, labels = ~departamento, values = ~n, type = "pie") %
 
 print(Dist)
 
-library(dplyr)
-
-filas_faltantes_rendimiento <- datos %>% 
-  filter(is.na(rendimiento))
-
-vis_miss(datos)
-print(filas_faltantes_rendimiento, n = Inf)
-
-
-  
- 
-
-
-  cat("Resumen estadístico del rendimiento (sin datos faltantes):\n")
-  print(summary(datos_limpios$rendimiento))
-  
-
-datos_imputados <- datos %>%
-  mutate(rendimiento = if_else(is.na(rendimiento),     
-                               mean(rendimiento, na.rm = TRUE),
-                               rendimiento))                 
-
-
-p4 <- ggplot(datos_imputados, aes(x = rendimiento)) +
-  geom_histogram(aes(y = ..density..), binwidth = 0.5, fill = "skyblue", color = "white") +
-  labs(title = "Histograma del Rendimiento",
-       x = "Rendimiento (Ton/Ha)",
-       y = "Frecuencia") +
-  theme_minimal()
-
-print(p4)
-
-library(dplyr)
-library(ggplot2)
-
-
-library(dplyr)
-datos_para_grafico <- datos_imputados_por_depto %>%
-  mutate(
-    tipo_dato = if_else(is.na(datos$t_produccion), 
-                        "Imputado", 
-                        "Original")
-  )
-
-
-
-datos_para_grafico2 <- datos_imputados_lm %>%
-  mutate( tipo_dato = if_else(is.na(datos$rendimiento), "Imputado", "Original"))
-
-
-
-
-
-p4 <- ggplot(data = datos_para_grafico2, aes(x = area_cosechada, y = rendimiento)) +
-  geom_point(aes(color = departamento, shape = tipo_dato), alpha = 0.7, size = 3.5) +
-  1
-  geom_smooth(method = "lm", color = "firebrick", se = FALSE) +
-  scale_shape_manual(values = c("Original" = 16, "Imputado" = 17)) +
-  labs(
-    title = "Relación entre Área Cosechada y Rendimiento",
-    x = "Área Cosechada (Hectáreas)",
-    y = "Rendimiento (Ton/Ha)",
-    color = "Departamento",
-    shape = "Tipo de Dato"
-  ) +
-  theme_minimal()
-
-p5_modificado <- ggplot(data = datos_para_grafico2, aes(x = area_cosechada, y = rendimiento_)) +
-  
-
-  geom_point(aes(color = departamento, shape = tipo_dato), alpha = 0.7, size = 4) +
-  
-  geom_smooth(method = "lm", color = "firebrick", se = FALSE) +
-  
-
-  labs(
-    title = "Relación entre Área Cosechada y Producción (con Datos Imputados)",
-    subtitle = "Los puntos imputados se muestran con una forma diferente",
-    x = "Área Cosechada (Hectáreas)",
-    y = "Producción (Toneladas)",
-    color = "Departamento",
-    shape = "Tipo de Dato" 
-  ) +
-
-  scale_shape_manual(values = c("Imputado" = 17, "Original" = 16)) +
-  
-  theme_minimal()
-
-
-library(tidyverse)
-print(p5_modificado + p5)
-
-p5 <-ggplot(data = datos_limpios, aes(x = area_cosechada, y = t_produccion)) +
+ggplot(data = datos_limpios, aes(x = area_cosechada, y = t_produccion)) +
   geom_point(aes(color = departamento), alpha = 0.6, size = 3) +
   geom_smooth(method = "lm", color = "firebrick", se = FALSE) +
   labs(
@@ -269,7 +148,7 @@ p5 <-ggplot(data = datos_limpios, aes(x = area_cosechada, y = t_produccion)) +
 
 
 
-p6 <- ggplot(data = datos_limpios, aes(x = area_cosechada, y = t_produccion)) +
+ggplot(data = datos_limpios, aes(x = area_cosechada, y = t_produccion)) +
   geom_point(aes(color = departamento), alpha = 0.6, size = 3) +
   geom_smooth(method = "lm", color = "firebrick", se = FALSE) +
   labs(
@@ -282,9 +161,6 @@ p6 <- ggplot(data = datos_limpios, aes(x = area_cosechada, y = t_produccion)) +
   theme_minimal()
 
 summary(datos)
-print( p5_modificado +p5)
-
-library(dplyr)
 
 
 datos_imputados_por_depto %>%
@@ -299,26 +175,7 @@ datos_imputados_por_depto <- datos %>%
   ungroup()
 
 
-
-indices_faltantes <- which(is.na(datos$rendimiento))
-
-
-modelo_para_imputar <- lm(rendimiento ~ area_cosechada + departamento + año, 
-                          data = datos[-indices_faltantes, ])
-
-
-predicciones <- predict(modelo_para_imputar, newdata = datos[indices_faltantes, ])
-
-
-datos_imputados_lm <- datos
-datos_imputados_lm$rendimiento[indices_faltantes] <- predicciones
-
-
-
-print(p6 + p5)
-
-
-lista_departamentos <- unique(datos$departamento)
+lista_departamentos <- unique(Datos_ImputR$departamento)
 
 
 lista_de_plots <- list()
@@ -326,9 +183,9 @@ lista_de_plots <- list()
 
 for (depto in lista_departamentos) {
   
-  p <- datos %>%
+  p <- Datos_ImputR %>%
     filter(departamento == depto) %>%
-    ggplot(aes(x = area_cosechada, y = rendimiento_imputado)) +
+    ggplot(aes(x = area_cosechada, y = t_produccion)) +
     geom_point(alpha = 0.6) +
     geom_smooth(method = "lm", se = FALSE) +
     ggtitle(depto) +
@@ -339,11 +196,6 @@ for (depto in lista_departamentos) {
 
 wrap_plots(lista_de_plots)
 
-
-vis_miss(datos)
-
-
-lista_departamentos <- unique(Datos_ImputR$departamento)
 
 
 for (depto in lista_departamentos) {
@@ -375,7 +227,7 @@ for (depto in lista_departamentos) {
          main = paste("Rendimiento Estandarizado en", depto))
   })
 }
-library(dplyr)
+
 ggplot(Datos_ImputR, aes(x = reorder(departamento, rendimiento, FUN = median), 
                           y = rendimiento, 
                           fill = departamento)) +
@@ -391,31 +243,64 @@ ggplot(Datos_ImputR, aes(x = reorder(departamento, rendimiento, FUN = median),
   theme(legend.position = "none")
 
 
-id.out.uni=function(x,method=c("Standarized","Tukey","Cook")){
-  id.out=NULL
-  if(method=="Standarized"){id.out=which(abs(scale(x))>3)}
-  else if(method=="Tukey"){id.out=which(x%in%(boxplot.stats(x)$out))}
-  else if(method=="Cook"){model=lm(x~1);CD=cooks.distance(model)
-  id.out=unname(which(CD>4*mean(CD)))}
-  return(id.out)
+Datos_ImputR <- Datos_ImputR %>%
+  mutate(id_fila = row_number())
+
+
+UMBRAL_INFLUENCIA <- 5
+
+# Creamos un data frame vacío para guardar los resultados
+resultados_influencia <- data.frame()
+
+
+# --- ANÁLISIS AUTOMATIZADO ---
+# Loop que recorre cada departamento
+for (depto_actual in unique(Datos_ImputR$departamento)) {
+  
+  # 1. Filtra los datos del departamento actual
+  datos_depto <- Datos_ImputR %>% filter(departamento == depto_actual)
+  
+  # 2. Identifica los outliers solo para este departamento
+  limite_superior <- quantile(datos_depto$rendimiento, 0.75, na.rm = TRUE) + 1.5 * IQR(datos_depto$rendimiento, na.rm = TRUE)
+  outliers_depto <- datos_depto %>% filter(rendimiento > limite_superior)
+  
+  if (nrow(outliers_depto) == 0) next # Si no hay outliers, salta al siguiente depto
+  
+  # 3. Calcula la media original del grupo (con todos los datos)
+  media_con_outliers <- mean(datos_depto$rendimiento, na.rm = TRUE)
+  
+  # 4. Loop que recorre cada outlier para medir su influencia
+  for (id_outlier in outliers_depto$id_fila) {
+    
+    # Excluye el outlier actual y recalcula la media
+    media_sin_outlier <- mean(datos_depto$rendimiento[datos_depto$id_fila != id_outlier], na.rm = TRUE)
+    
+    # Calcula el cambio porcentual que causó el outlier
+    cambio_porcentual <- abs((media_con_outliers - media_sin_outlier) / media_con_outliers) * 100
+    
+    # Guarda el resultado
+    info_outlier <- datos_depto %>% filter(id_fila == id_outlier)
+    resultado_fila <- data.frame(
+      id_fila = id_outlier,
+      departamento = depto_actual,
+      municipio = info_outlier$municipio,
+      año = info_outlier$año,
+      valor_outlier = info_outlier$rendimiento,
+      influencia_pct = cambio_porcentual
+    )
+    resultados_influencia <- rbind(resultados_influencia, resultado_fila)
+  }
 }
 
-names(Datos)
 
-id.out.uni(Datos_ImputR$rendimiento,method="Standarized")
-id.out.uni(Datos_ImputR$rendimiento,method="Tukey")
-id.out.uni(Datos_ImputR$rendimiento,method="Cook")
+# --- RESULTADO FINAL ---
+# Filtramos la lista para mostrar solo los outliers que superan el umbral
+outliers_a_revisar <- resultados_influencia %>%
+  filter(influencia_pct > UMBRAL_INFLUENCIA) %>%
+  arrange(desc(influencia_pct)) # Ordenamos por el de mayor impacto
 
-names(Datos)
-
-
-windows()
-par(mfrow=c(2,5))
-lapply(Datos_ImputR[,-(1:3)],boxplot,col="Blue")
-
-out_Stand = lapply(Datos[,-(1:3)],id.out.uni,method="Standarized")
-out_Tukey = lapply(Datos[,-(1:3)],id.out.uni,method="Tukey")
-out_Cook = lapply(Datos[,-(1:3)],id.out.uni,method="Cook")
+print("--- Outliers a Revisar (Influencia > 5%) ---")
+print(outliers_a_revisar)
 
 
 datos_comparacion <- Datos_ImputR %>%
