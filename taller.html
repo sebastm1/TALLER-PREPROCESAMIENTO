@@ -410,6 +410,9 @@ conclusiones fiables.</p>
 <h3><strong>Marco Teórico y Metodología</strong></h3>
 <p>A continuación, se describen los pasos metodológicos llevados a cabo
 para el preprocesamiento de los datos.</p>
+</div>
+<div id="preprocesamiento-de-datos" class="section level3">
+<h3><strong>Preprocesamiento de Datos</strong></h3>
 <div id="filtrado-de-la-base-de-datos" class="section level4">
 <h4><strong>1. Filtrado de la Base de Datos</strong></h4>
 <p>El conjunto de datos inicial contenía registros de toda la producción
@@ -417,11 +420,20 @@ agrícola de la empresa, incluyendo diferentes tipos de vegetales. Dado
 que el objetivo de este análisis se centra exclusivamente en el maíz, el
 primer paso fue filtrar la base de datos para conservar únicamente los
 registros correspondientes a este producto.</p>
-<p><em>1.1 Carga de los datos</em> <em>Aquí puedes explicar brevemente
-cómo usaste una función como <code>filter()</code> en R para seleccionar
-solo las filas donde el producto era ‘MAIZ’.</em></p>
-<pre class="r"><code># Este es un chunk. Solo va código aquí.
-library(dplyr)
+<p><em>1.1 Carga de Librerias y Datos</em> <em>Como primer paso para se
+realizo la carga de todos las librerias necesarias a usar y de la base
+de datos proporcionada por la empresa generando una variable de facil
+manejo.</em></p>
+<pre class="r"><code>library(dplyr)
+library(stringr)
+library(ggplot2)
+library(tidyverse)
+library(patchwork)
+library(tidyr)
+library(naniar)
+library(corrplot)
+library(mice)
+library(plotly)
 datos &lt;- readxl::read_excel(&quot;C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx&quot;)</code></pre>
 </div>
 <div id="estandarización-de-nombres-de-columnas" class="section level4">
@@ -486,8 +498,28 @@ usaste para identificar los NA, luego el código para eliminarlos
 código que usaste para imputar con la media por grupo. Finalmente,
 explica por qué te quedaste con el primer método.</em></p>
 <pre class="r"><code># ESPACIO PARA COLOCAR EL CÓDIGO DE R</code></pre>
-<pre><code></code></pre>
 </div>
+</div>
+<div id="procesamiento-de-datos-y-análisis" class="section level3">
+<h3><strong>Procesamiento de Datos y Análisis</strong></h3>
+<p>Una vez preprocesados los datos, se procede a realizar un análisis
+exploratorio para responder a las preguntas de negocio.</p>
+<div id="distribución-de-la-muestra-por-departamentos" class="section level4">
+<h4><strong>1. Distribución de la muestra por
+departamentos</strong></h4>
+<p>Se genera un gráfico de barras para visualizar el número de registros
+(muestras) que se tienen por cada departamento.</p>
+<pre class="r"><code># ESPACIO PARA EL CÓDIGO DE R (GRÁFICO 1)
+# Ejemplo: ggplot(datos, aes(x = departamento)) + geom_bar()</code></pre>
+</div>
+</div>
+<div id="análisis" class="section level2">
+<h2><em>Análisis</em></h2>
+<p>En este espacio, describe lo que observas en el gráfico. Por ejemplo:
+¿Hay departamentos con muchos más registros que otros? ¿La muestra está
+balanceada o desbalanceada? Esto puede indicar qué departamentos tienen
+una mayor frecuencia de reportes o si la recolección de datos ha sido
+más intensa en ciertas zonas del país.</p>
 </div>
 
 
