@@ -46,11 +46,19 @@ A continuación, se describen los pasos metodológicos llevados a cabo para el p
 
 El conjunto de datos inicial contenía registros de toda la producción agrícola de la empresa, incluyendo diferentes tipos de vegetales. Dado que el objetivo de este análisis se centra exclusivamente en el maíz, el primer paso fue filtrar la base de datos para conservar únicamente los registros correspondientes a este producto.
 
-*1.1 Carga de los datos*
-*Aquí puedes explicar brevemente cómo usaste una función como `filter()` en R para seleccionar solo las filas donde el producto era 'MAIZ'.*
+*1.1 Carga de Librerias y Datos*
+*Como primer paso para se realizo la carga de todos las librerias necesarias a usar y de la base de datos proporcionada por la empresa generando una variable de facil manejo.*
 ```{r message=TRUE,eval=FALSE}
-# Este es un chunk. Solo va código aquí.
 library(dplyr)
+library(stringr)
+library(ggplot2)
+library(tidyverse)
+library(patchwork)
+library(tidyr)
+library(naniar)
+library(corrplot)
+library(mice)
+library(plotly)
 datos <- readxl::read_excel("C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx")
 ```
 

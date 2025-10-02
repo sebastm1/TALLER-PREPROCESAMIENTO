@@ -420,11 +420,20 @@ agrícola de la empresa, incluyendo diferentes tipos de vegetales. Dado
 que el objetivo de este análisis se centra exclusivamente en el maíz, el
 primer paso fue filtrar la base de datos para conservar únicamente los
 registros correspondientes a este producto.</p>
-<p><em>1.1 Carga de los datos</em> <em>Aquí puedes explicar brevemente
-cómo usaste una función como <code>filter()</code> en R para seleccionar
-solo las filas donde el producto era ‘MAIZ’.</em></p>
-<pre class="r"><code># Este es un chunk. Solo va código aquí.
-library(dplyr)
+<p><em>1.1 Carga de Librerias y Datos</em> <em>Como primer paso para se
+realizo la carga de todos las librerias necesarias a usar y de la base
+de datos proporcionada por la empresa generando una variable de facil
+manejo.</em></p>
+<pre class="r"><code>library(dplyr)
+library(stringr)
+library(ggplot2)
+library(tidyverse)
+library(patchwork)
+library(tidyr)
+library(naniar)
+library(corrplot)
+library(mice)
+library(plotly)
 datos &lt;- readxl::read_excel(&quot;C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx&quot;)</code></pre>
 </div>
 <div id="estandarización-de-nombres-de-columnas" class="section level4">
