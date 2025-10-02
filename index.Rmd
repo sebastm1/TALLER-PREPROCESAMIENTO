@@ -29,102 +29,102 @@ Una importante empresa agrícola nacional, con un vasto portafolio de cultivos, 
 Para responder, se nos ha entregado una base de datos histórica, consolidada por un equipo anterior. Sin embargo, este activo digital presenta un desafío inicial: datos desorganizados, inconsistencias y vacíos de información. Nuestra misión como equipo de análisis de datos es embarcarnos en un viaje para convertir este caos en claridad, realizando un preprocesamiento exhaustivo para forjar una herramienta de análisis fiable y, finalmente, hacer que los datos cuenten la historia de la producción de maíz en Colombia.
 ***
 
-### **Marco Teórico y Metodología**
+### **Preparación de la Data: Forjando la Herramienta**
 
-A continuación, se describen los pasos metodológicos llevados a cabo para el preprocesamiento de los datos.
+Todo gran análisis comienza con datos de alta calidad. Esta primera fase es la más crítica: es donde transformamos la materia prima —un conjunto de datos crudo y desordenado— en una base de datos limpia, coherente y lista para ser interrogada. Es el equivalente a afinar los instrumentos antes de un concierto.
 
-### **1.Preparación de la Data: Forjando la Herramienta**
-
-#### **1.1 Carga de Librerías y Segmentación del Cultivo**
+#### **Carga de Librerías y Segmentación del Cultivo**
 
 Nuestra historia comienza con un universo de información sobre toda la producción agrícola de la empresa. Para encontrar las respuestas sobre el maíz, nuestro primer paso es enfocar el lente, aislando la señal de nuestro cultivo de interés del ruido generado por los demás.
 
 *Explicación del código:Se cargan las librerías que nos acompañarán en este viaje analítico. Luego, se leen los datos y, mediante filter(), se segmenta el dataframe para crear una nueva base de datos que contiene exclusivamente los registros de MAÍZ*
-```{r message=TRUE,eval=FALSE}
-library(dplyr);library(stringr);library(ggplot2)
-library(tidyverse)
-library(patchwork)
-library(tidyr)
-library(naniar)
-library(corrplot)
-library(mice)
-library(plotly)
+```{r message=FALSE, warning=FALSE, results='hide'}
+library(dplyr);library(stringr);library(ggplot2);library(tidyverse);
+library(patchwork);library(tidyr);library(naniar);library(corrplot)
+library(mice);library(plotly);library(readxl);library(table1)
+
 datos <- readxl::read_excel("C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx")
+level_CULTIVO <- c(MAIZ = "MAIZ", maiz = "MAIZ")
+datos <- datos %>% mutate(CULTIVO = recode(CULTIVO, !!!level_CULTIVO))
+datos <- datos %>% filter(CULTIVO == "MAIZ")
 ```
-*1.2 Filtrado y Estandarización Inicial*
-*El conjunto de datos inicial contenía registros de toda la producción agrícola. Se filtra para conservar únicamente los registros correspondientes a MAÍZ.*
-```{r message=TRUE,eval=FALSE}
-# Estandarizar 'maiz' y 'MAIZ' a un solo valor
-level_CULTIVO <- c(MAIZ = "MAIZ", maiz= "MAIZ")
-datos <- datos %>%
-  mutate(CULTIVO = recode(CULTIVO, !!!level_CULTIVO))
+#### **Carga de Librerías y Segmentación del Cultivo**
 
-# Filtrar para quedarse solo con Maíz
-datos_maiz <- datos %>%
-  filter(CULTIVO == "MAIZ")
-```
-
-
-#### **2. Estandarización de Nombres de Columnas**
-
-Los nombres originales de las columnas eran poco prácticos para la manipulación en R (por ejemplo, contenían espacios, mayúsculas o caracteres especiales). Para facilitar el trabajo, se procedió a renombrar las columnas con identificadores más cortos, descriptivos y manejables, siguiendo un formato consistente (ej. `nombre_columna`).
+Los nombres de las columnas originales son poco intuitivos, lo que puede llevar a errores. Para trabajar de manera eficiente y clara, debemos establecer un lenguaje común.
 
 **Explicación del código:**
-*Detalla la función que usaste para cambiar los nombres, como `rename()` o asignando un nuevo vector de nombres a `colnames()`.*
-
-```r
-# ESPACIO PARA COLOCAR EL CÓDIGO DE R
+*Se define un vector con nombres claros y estandarizados, y se asigna directamente a las columnas del dataframe datos. Ahora, todos en el equipo sabemos exactamente a qué se refiere cada variable.*
+```{r message=TRUE,results='hide'}
+nuevos_nombres <- c("departamento", "municipio", "grupo", "cultivo", "ano",
+                    "area_sembrada", "area_cosechada", "t_produccion",
+                    "estado_fisico", "ciclo_cultivo")
+names(datos) <- nuevos_nombres
 ```
 
-#### **3. Estandarización de Datos Categóricos**
 
-Para asegurar la consistencia, todos los datos de tipo texto (categóricos), como los nombres de los departamentos o productos, fueron convertidos a mayúsculas. Esto evita problemas de duplicidad por diferencias de formato (ej. 'valle' vs 'Valle').
+#### **Creación de la Variable Rendimiento**
+
+Producir mucho no es sinónimo de ser eficiente. La empresa necesita una métrica que mida la productividad por hectárea. Aquí es donde creamos al protagonista de nuestro análisis: la variable rendimiento.
 
 **Explicación del código:**
-*Explica cómo aplicaste funciones como `toupper()` o `mutate()` junto con `str_to_upper()` a las columnas de texto relevantes.*
+*Usando 'mutate()', creamos la columna rendimiento. La fórmula t_produccion / area_cosechada se implementa con case_when() para manejar de forma robusta casos especiales, como divisiones por cero o datos faltantes, asegurando la calidad de nuestro indicador clave.*
 
-```r
-# ESPACIO PARA COLOCAR EL CÓDIGO DE R
+```{r message=TRUE,results='hide'}
+  datos <- datos %>%
+  mutate(
+    rendimiento = case_when(
+      is.na(t_produccion) | is.na(area_cosechada) ~ NA_real_,
+      area_cosechada == 0 ~ 0,
+      TRUE ~ t_produccion / area_cosechada
+    )
+  )
 ```
 
-#### **4. Creación de la Variable de Rendimiento**
 
-Con el fin de medir la eficiencia de la producción, se creó una nueva variable llamada **Rendimiento**. Esta variable se calcula dividiendo la cantidad producida por la superficie cosechada (`Produccion / Area`). Para evitar errores matemáticos de división por cero (0/0 o n/0), se implementó una condición que asigna un valor de 0 al rendimiento si el área cosechada es cero.
+#### **Tareas Adicionales de Preprocesamiento**
 
+Los datos, como cualquier recurso, pueden tener impurezas. Para garantizar la integridad técnica y la fiabilidad de nuestras conclusiones, realizamos una limpieza final.
 **Explicación del código:**
-*Describe cómo utilizaste una estructura condicional como `ifelse()` dentro de `mutate()` para calcular el rendimiento de forma segura.*
+*Primero, estandarizamos los nombres de los departamentos a mayúsculas para asegurar que 'Valle' y 'VALLE' se traten como uno solo. Segundo, en lugar de descartar filas con información faltante (lo que podría sesgar nuestros resultados), optamos por un método de imputación estadística (mice) para rellenar los vacíos de forma inteligente. El resultado es Datos_ImputR, nuestro set de datos final: completo, limpio y confiable.*
 
-```r
-# ESPACIO PARA COLOCAR EL CÓDIGO DE R
+```{r message=TRUE,results='hide'}
+library(dplyr)
+# 1. Estandarizar texto a mayúsculas
+datos <- datos %>% 
+  mutate(departamento = str_to_upper(departamento))
+
+# 2. Imputación de datos faltantes
+imputR <- mice(datos, m = 5, maxit = 5, seed = 123, print = F) 
+Datos_ImputR <- complete(imputR)
 ```
 
-#### **5. Manejo de Datos Faltantes (NA)**
+### **Preparación de la Data: Forjando la Herramienta**
 
-Al inspeccionar el conjunto de datos, se identificaron valores faltantes (NA) en variables clave. Se exploraron dos estrategias para abordar este problema:
+Con nuestra herramienta de datos ya forjada y afinada, comienza la fase de exploración. Ahora podemos interrogar a los datos para que nos revelen sus secretos y nos guíen hacia decisiones de negocio más inteligentes.
 
-  * **Camino 1: Eliminación de datos faltantes:** La primera aproximación consistió en ignorar y eliminar las filas que contenían valores nulos.
-  * **Camino 2: Imputación de datos:** La segunda estrategia fue imputar (rellenar) los valores faltantes utilizando la media de la producción, agrupada por departamento.
+#### **Distribución de la muestra por departamentos**
+Antes de analizar el rendimiento, necesitamos mapear el terreno: ¿de dónde proviene nuestra información? Este mapa nos muestra la concentración de datos a nivel nacional.
 
-Tras comparar ambos métodos, se observó que la imputación no generaba un cambio significativo en la distribución general de los datos. Por lo tanto, para mantener la integridad de los registros originales y evitar introducir posibles sesgos, se decidió proceder con el primer camino: eliminar las filas con datos faltantes para el resto del análisis.
+```{r echo=FALSE}
+#obtencion de frecuencia en la muestra
+datos_freq <- Datos_ImputR %>%
+  count(departamento)
 
-**Explicación del código:**
-*Muestra el código que usaste para identificar los NA, luego el código para eliminarlos (`na.omit()` o `drop_na()`) y, por separado, el código que usaste para imputar con la media por grupo. Finalmente, explica por qué te quedaste con el primer método.*
+#grafico de distribucion de muestra
+plot_ly(datos_freq, labels = ~departamento, values = ~n, type = "pie") %>%
+  layout(
+    title = list(
+      text = "<b>DISTRIBUCIÓN DE LA MUESTRA POR DEPARTAMENTOS</b>", #
+      font = list(
+        color = "darkred",  
+        size = 15      
+      ),
+      x = 0.5,           
+      xanchor = "center" 
+    )
+  )
 
-```r
-# ESPACIO PARA COLOCAR EL CÓDIGO DE R
-```
 
-
-### **Procesamiento de Datos y Análisis**
-Una vez preprocesados los datos, se procede a realizar un análisis exploratorio para responder a las preguntas de negocio.
-
-#### **1. Distribución de la muestra por departamentos**
-Se genera un gráfico de barras para visualizar el número de registros (muestras) que se tienen por cada departamento.
-
-```{r}
-
-# ESPACIO PARA EL CÓDIGO DE R (GRÁFICO 1)
-# Ejemplo: ggplot(datos, aes(x = departamento)) + geom_bar()
 ```
 
 
