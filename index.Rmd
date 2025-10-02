@@ -53,7 +53,7 @@ Los nombres de las columnas originales son poco intuitivos, lo que puede llevar 
 **Explicación del código:**
 *Se define un vector con nombres claros y estandarizados, y se asigna directamente a las columnas del dataframe datos. Ahora, todos en el equipo sabemos exactamente a qué se refiere cada variable.*
 ```{r message=TRUE,results='hide'}
-nuevos_nombres <- c("departamento", "municipio", "grupo", "cultivo", "ano",
+nuevos_nombres <- c("departamento", "municipio", "grupo", "cultivo", "año",
                     "area_sembrada", "area_cosechada", "t_produccion",
                     "estado_fisico", "ciclo_cultivo")
 names(datos) <- nuevos_nombres
@@ -113,4 +113,49 @@ plot_ly(datos_freq, labels = ~departamento, values = ~n, type = "pie") %>%
   layout(title = list(text = "<b>DISTRIBUCIÓN DE LA MUESTRA POR DEPARTAMENTOS</b>",
       font = list(color = "darkred",  size = 15),x = 0.5, xanchor = "center"))
 ```
+**Análisis de los Resultados**
+*[Espacio para su análisis e interpretación. ¿Qué departamentos muestran mayor rendimiento mediano? ¿Cuáles tienen mayor variabilidad? ¿Se observan muchos valores atípicos?]*
+
+#### **Comparación del rendimiento en 2007 vs. 2017**
+El negocio no es estático. Para entender el presente, debemos mirar al pasado. Este análisis nos cuenta la historia de una década de cambio.
+
+**Explicación del código:**
+*Filtramos los datos para los años 2007 y 2017. geom_col con position = "dodge" crea un gráfico de barras comparativo que muestra la evolución del rendimiento mediano en cada departamento.*
+
+```{r echo=FALSE}
+datos_comparacion <- Datos_ImputR %>%
+  filter(año %in% c(2007, 2017)) %>%
+  group_by(departamento, año) %>%
+  summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')
+
+ggplot(datos_comparacion, aes(x = rendimiento_mediano, y = reorder(departamento, rendimiento_mediano), fill = as.factor(año))) +
+  geom_col(position = "dodge") +
+  scale_fill_manual(name = "Año", values = c("2007" = "orange", "2017" = "skyblue")) +
+  labs(title = "3. Comparación de Rendimiento Mediano: 2007 vs. 2017", x = "Rendimiento Mediano (Ton/Ha)", y = "Departamento") +
+  theme_minimal()
+```
+**Análisis de los Resultados**
+*[Espacio para su análisis e interpretación. ¿Qué departamentos mejoraron su rendimiento en esa década? ¿Alguno empeoró? ¿Qué cambios importantes se observan?]*
+
+#### **Tendencia del rendimiento a través de los años**
+Esta visualización nos cuenta la historia completa a través del tiempo. ¿Qué departamentos han mostrado un crecimiento sostenido? ¿Cuáles se han estancado o han sido erráticos?
+
+**Explicación del código:**
+*Agrupamos por año y departamento para calcular el rendimiento mediano anual. geom_line conecta los puntos a lo largo del tiempo, revelando la trayectoria de cada departamento.*
+
+```{r echo=FALSE}
+tendencia_anual <- Datos_ImputR %>%
+  group_by(año, departamento) %>%
+  summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')
+
+ggplot(tendencia_anual, aes(x = año, y = rendimiento_mediano, color = departamento)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_continuous(breaks = seq(min(tendencia_anual$año), max(tendencia_anual$año), by = 2)) +
+  labs(title = "4. Tendencia Anual del Rendimiento por Departamento", x = "Año", y = "Rendimiento Mediano (Ton/Ha)") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+**Análisis de los Resultados**
+*[Espacio para su análisis e interpretación. ¿Qué departamentos mejoraron su rendimiento en esa década? ¿Alguno empeoró? ¿Qué cambios importantes se observan?]*
 
