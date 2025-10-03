@@ -92,7 +92,7 @@ ggplot(datos, aes(x = departamento, y = rendimiento)) +
     y = "Rendimiento (unidades)"
   )
 
-
+summary()
  ggplot(datos_imputados, aes(x = departamento, y = rendimiento)) +
   geom_boxplot() +
   labs(
@@ -160,27 +160,6 @@ ggplot(data = datos_limpios, aes(x = area_cosechada, y = t_produccion)) +
   ) +
   theme_minimal()
 
-summary(datos)
-
-
-datos_imputados_por_depto %>%
-  filter(is.na(datos$t_produccion)) %>%
-  select(departamento, municipio, año, t_produccion, t_produccion_imputada)
-
-datos_imputados_por_depto <- datos %>%
-  group_by(departamento) %>%
-  mutate(t_produccion_imputada = if_else(is.na(t_produccion),
-                                         mean(t_produccion, na.rm = TRUE),
-                                         t_produccion)) %>%
-  ungroup()
-
-
-lista_departamentos <- unique(Datos_ImputR$departamento)
-
-
-lista_de_plots <- list()
-
-
 for (depto in lista_departamentos) {
   
   p <- Datos_ImputR %>%
@@ -247,38 +226,21 @@ Datos_ImputR <- Datos_ImputR %>%
   mutate(id_fila = row_number())
 
 
-UMBRAL_INFLUENCIA <- 5
+UMBRAL_INFLUENCIA <- 3
 
-# Creamos un data frame vacío para guardar los resultados
 resultados_influencia <- data.frame()
 
-
-# --- ANÁLISIS AUTOMATIZADO ---
-# Loop que recorre cada departamento
 for (depto_actual in unique(Datos_ImputR$departamento)) {
   
-  # 1. Filtra los datos del departamento actual
   datos_depto <- Datos_ImputR %>% filter(departamento == depto_actual)
-  
-  # 2. Identifica los outliers solo para este departamento
   limite_superior <- quantile(datos_depto$rendimiento, 0.75, na.rm = TRUE) + 1.5 * IQR(datos_depto$rendimiento, na.rm = TRUE)
   outliers_depto <- datos_depto %>% filter(rendimiento > limite_superior)
-  
-  if (nrow(outliers_depto) == 0) next # Si no hay outliers, salta al siguiente depto
-  
-  # 3. Calcula la media original del grupo (con todos los datos)
+  if (nrow(outliers_depto) == 0) next 
   media_con_outliers <- mean(datos_depto$rendimiento, na.rm = TRUE)
   
-  # 4. Loop que recorre cada outlier para medir su influencia
   for (id_outlier in outliers_depto$id_fila) {
-    
-    # Excluye el outlier actual y recalcula la media
     media_sin_outlier <- mean(datos_depto$rendimiento[datos_depto$id_fila != id_outlier], na.rm = TRUE)
-    
-    # Calcula el cambio porcentual que causó el outlier
     cambio_porcentual <- abs((media_con_outliers - media_sin_outlier) / media_con_outliers) * 100
-    
-    # Guarda el resultado
     info_outlier <- datos_depto %>% filter(id_fila == id_outlier)
     resultado_fila <- data.frame(
       id_fila = id_outlier,
@@ -292,12 +254,9 @@ for (depto_actual in unique(Datos_ImputR$departamento)) {
   }
 }
 
-
-# --- RESULTADO FINAL ---
-# Filtramos la lista para mostrar solo los outliers que superan el umbral
 outliers_a_revisar <- resultados_influencia %>%
   filter(influencia_pct > UMBRAL_INFLUENCIA) %>%
-  arrange(desc(influencia_pct)) # Ordenamos por el de mayor impacto
+  arrange(desc(influencia_pct))
 
 print("--- Outliers a Revisar (Influencia > 5%) ---")
 print(outliers_a_revisar)
@@ -343,3 +302,15 @@ ggplot(data = tendencia_anual, aes(x = año, y = rendimiento_mediano, color = de
   
   theme(legend.position = "bottom",
         axis.text.x = element_text(angle = 0, hjust = 1))
+
+# deploy.R
+library(rmarkdown)
+
+# Renderiza el Rmd a HTML
+render("taller.Rmd", output_format = "html_document", output_file = "index.html")
+
+# Ejecuta git desde R
+system("git add .")
+system('git commit -m "Auto update HTML from Rmd"')
+system("git push origin main")  # cambia 'main' por tu rama si es distinto
+

@@ -2,7 +2,7 @@
 title: "ANÁLISIS ESTADÍSTICO PRODUCCIÓN MAÍZ"
 author: 
   - JHON SEBASTIAN VALENCIA URBANO - 2456780
-  - JHON JAIRO PANTOJA ALVAREZ - 2355
+  - JHON JAIRO PANTOJA ALVAREZ - 2355359
   - JAIME ANDRES OSPINA VARGAS - 2456578
 output: 
   rmdformats::readthedown:
@@ -118,7 +118,9 @@ plot_ly(datos_freq, labels = ~departamento, values = ~n, type = "pie") %>%
       font = list(color = "darkred",  size = 15),x = 0.5, xanchor = "center"))
 ```
 **Análisis de los Resultados**
-*[Espacio para su análisis e interpretación. ¿Qué departamentos muestran mayor rendimiento mediano? ¿Cuáles tienen mayor variabilidad? ¿Se observan muchos valores atípicos?]*
+*La distribución de la muestra está bien repartida entre los departamentos, lo que es positivo para el análisis, ya que las conclusiones generales no estarán fuertemente sesgadas por la información de una sola región.*
+
+*Llama la atención que Valle del Cauca, a pesar de ser el departamento con la menor cantidad de registros en este conjunto de datos, fue el que demostró tener el rendimiento más alto y consistente en los análisis anteriores. Esto sugiere que su alta productividad no es un artefacto de tener una muestra más grande, sino una característica real de la región.*
 
 #### **Comparación del rendimiento en 2007 vs. 2017**
 El negocio no es estático. Para entender el presente, debemos mirar al pasado. Este análisis nos cuenta la historia de una década de cambio.
