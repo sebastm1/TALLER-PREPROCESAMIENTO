@@ -11,7 +11,9 @@ output:
     css: styles.css
     highlight: "pygments"
     includes:
+      in_header: favicon.html
       after_body: code-toggle.html
+      
 ---
 
 ```{r setup, include=FALSE}
