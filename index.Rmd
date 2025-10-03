@@ -175,6 +175,7 @@ g2_dash <- ggplot(Datos_ImputR, aes(x = reorder(departamento, rendimiento, FUN =
 g4_dash <- ggplot(tendencia_anual, aes(x = año, y = rendimiento_mediano, color = departamento)) + geom_line(linewidth = 1) + labs(subtitle = "4. Tendencia Anual del Rendimiento", x = "Año", y = "Rendimiento (Ton/Ha)") + theme_minimal() + theme(legend.position = "none")
 (g1_dash + g2_dash) / g4_dash + plot_annotation(title = 'Tablero Gráfico Resumen del Cultivo de Maíz')
 ```
+
 #### **Tabla de Indicadores Descriptivos**
 
 Mientras que los gráficos nos dan la intuición, las decisiones de negocio requieren los números detrás de las imágenes. Esta tabla proporciona las estadísticas descriptivas precisas.
