@@ -163,3 +163,27 @@ ggplot(tendencia_anual, aes(x = año, y = rendimiento_mediano, color = departame
 **Análisis de los Resultados**
 *[Espacio para su análisis e interpretación. ¿Qué departamentos mejoraron su rendimiento en esa década? ¿Alguno empeoró? ¿Qué cambios importantes se observan?]*
 
+#### **Tablero Gráfico Resumen**
+Para la toma de decisiones estratégicas, los directivos necesitan una visión global y rápida. Este tablero de mando consolida nuestros hallazgos más importantes en una sola vista.
+
+**Explicación del código:**
+*La librería patchwork nos permite componer un tablero combinando nuestros gráficos (g1, g2, g4) con una sintaxis simple e intuitiva (+ y /), como si armáramos un rompecabezas.*
+
+```{r}
+g1_dash <- Datos_ImputR %>% count(departamento, sort = TRUE) %>% mutate(departamento = reorder(departamento, n)) %>% ggplot(aes(x = n, y = departamento)) + geom_col(fill = "steelblue") + labs(subtitle = "1. Registros por Departamento", x = NULL, y = NULL) + theme_minimal()
+g2_dash <- ggplot(Datos_ImputR, aes(x = reorder(departamento, rendimiento, FUN = median), y = rendimiento)) + geom_boxplot(fill = "skyblue") + coord_flip() + labs(subtitle = "2. Distribución del Rendimiento", x = NULL, y = NULL) + theme_minimal()
+g4_dash <- ggplot(tendencia_anual, aes(x = año, y = rendimiento_mediano, color = departamento)) + geom_line(linewidth = 1) + labs(subtitle = "4. Tendencia Anual del Rendimiento", x = "Año", y = "Rendimiento (Ton/Ha)") + theme_minimal() + theme(legend.position = "none")
+(g1_dash + g2_dash) / g4_dash + plot_annotation(title = 'Tablero Gráfico Resumen del Cultivo de Maíz')
+```
+#### **Tabla de Indicadores Descriptivos**
+
+Mientras que los gráficos nos dan la intuición, las decisiones de negocio requieren los números detrás de las imágenes. Esta tabla proporciona las estadísticas descriptivas precisas.
+
+**Explicación del código:**
+*table1() es una potente función que genera tablas con calidad de publicación. Con una simple fórmula (~ rendimiento | departamento), obtenemos un resumen estadístico completo, desglosado por departamento.*
+
+```{r}
+table1(~ rendimiento | departamento, data = Datos_ImputR, topclass="Rtable1-zebra")
+```
+**Análisis de los Resultados**
+*[Espacio para su análisis e interpretación de la tabla. Puede comparar directamente la media y la desviación estándar entre departamentos, o comentar sobre los rangos (mínimo y máximo) para reforzar las conclusiones de los boxplots.]*
