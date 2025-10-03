@@ -87,15 +87,18 @@ Producir mucho no es sinónimo de ser eficiente. La empresa necesita una métric
 
 Para asegurar la calidad y robustez del análisis, se realizó un preprocesamiento metódico de los datos. Primero, se estandarizaron los nombres de los departamentos a mayúsculas para unificar los registros. A continuación, para tratar los datos faltantes, se evaluaron tres estrategias: ignorar los registros, imputar con la mediana y utilizar una imputación múltiple con el método MICE.
 
-```{r message=TRUE,results='hide'}
-library(dplyr)
+```{r message=TRUE}
 # 1. Estandarizar texto a mayúsculas
+# Asumimos que partimos de 'datos_solo_maiz' y lo llamamos 'datos'
 datos <- datos %>% 
   mutate(departamento = str_to_upper(departamento))
 
-# 2. Imputación de datos faltantes
-imputR <- mice(datos, m = 5, maxit = 5, seed = 123, print = F) 
+# 2. Imputación de datos faltantes con MICE
+imputR <- mice(datos, m = 5, maxit = 5, seed = 123, print = FALSE) 
 Datos_ImputR <- complete(imputR)
+
+# Verificamos que ya no hay datos faltantes
+sum(is.na(Datos_ImputR))
 ```
 **Análisis de los Resultados**
 *Se observó que la imputación por la mediana, si bien completaba los datos, tendía a distorsionar la distribución al elevar el impacto de los outliers. Por otro lado, la imputación con MICE generó valores que no producían estimaciones negativas y cuyo comportamiento global era muy similar al de simplemente ignorar los datos. Dado que MICE nos permite conservar la totalidad de los registros sin introducir sesgos significativos, se eligió como el método definitivo. El resultado es Datos_ImputR, nuestro set de datos final: completo, limpio y confiable para el análisis.*
