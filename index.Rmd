@@ -85,20 +85,59 @@ Producir mucho no es sinónimo de ser eficiente. La empresa necesita una métric
 
 #### **Imputación de Datos Faltantes**
 
-Para asegurar la calidad y robustez del análisis, se realizó un preprocesamiento metódico de los datos. Primero, se estandarizaron los nombres de los departamentos a mayúsculas para unificar los registros. A continuación, para tratar los datos faltantes, se evaluaron tres estrategias: ignorar los registros, imputar con la mediana y utilizar una imputación múltiple con el método MICE.
+Para asegurar la calidad y robustez del análisis, se realizó un preprocesamiento metódico de los datos. Primero, se estandarizaron los nombres de los departamentos a mayúsculas para unificar los registros. A continuación, para tratar los datos faltantes, se evaluaron tres estrategias: ignorar los registros, imputar con la mediana por deparmento y utilizar una imputación múltiple con el método MICE.
 
 ```{r message=TRUE}
 # 1. Estandarizar texto a mayúsculas
-# Asumimos que partimos de 'datos_solo_maiz' y lo llamamos 'datos'
 datos <- datos %>% 
   mutate(departamento = str_to_upper(departamento))
+#omitir datos
+datos_limpios <- datos %>%
+  filter(!is.na(datos$rendimiento))
 
-# 2. Imputación de datos faltantes con MICE
+p1 <- ggplot(datos_limpios, aes(x = departamento, y = rendimiento)) +
+  geom_boxplot() +
+  labs(
+    title = "Distribución del Rendimiento por Departamento omitiendo NA",
+    x = "Departamento",
+    y = "Rendimiento (unidades)"
+  ) +
+  scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, 1))
+
+
+#imputar por departamento
+
+datos_imputados <- datos %>%
+  group_by(departamento) %>%
+  mutate(
+    t_produccion = ifelse(is.na(t_produccion), 
+                          median(t_produccion, na.rm = TRUE), 
+                          t_produccion)
+  ) %>%
+  ungroup()
+p2 <- ggplot(datos_imputados, aes(x = departamento, y = rendimiento)) +
+  geom_boxplot() +
+  labs(
+    title = "Distribución del Rendimiento por Departamento imputados por departamento",
+    x = "Departamento",
+    y = "Rendimiento (unidades)"
+  ) +
+  scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, 1))
+
+# Imputación de datos faltantes con MICE
 imputR <- mice(datos, m = 5, maxit = 5, seed = 123, print = FALSE) 
 Datos_ImputR <- complete(imputR)
 
-# Verificamos que ya no hay datos faltantes
-sum(is.na(Datos_ImputR))
+p3 <- ggplot(Datos_ImputR, aes(x = departamento, y = rendimiento)) +
+  geom_boxplot() +
+  labs(
+    title = "Distribución del Rendimiento por Departamento imputados por mice",
+    x = "Departamento",
+    y = "Rendimiento (unidades)"
+  ) +
+  scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, 1))
+
+print((p1+p2)/p3)
 ```
 **Análisis de los Resultados**
 *Se observó que la imputación por la mediana, si bien completaba los datos, tendía a distorsionar la distribución al elevar el impacto de los outliers. Por otro lado, la imputación con MICE generó valores que no producían estimaciones negativas y cuyo comportamiento global era muy similar al de simplemente ignorar los datos. Dado que MICE nos permite conservar la totalidad de los registros sin introducir sesgos significativos, se eligió como el método definitivo. El resultado es Datos_ImputR, nuestro set de datos final: completo, limpio y confiable para el análisis.*
