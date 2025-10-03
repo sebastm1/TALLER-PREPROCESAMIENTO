@@ -1,0 +1,26 @@
+<!-- Botón flotante -->
+<div id="code-menu">
+  <button id="code-btn">CODE ▼</button>
+  <div id="code-options">
+    <div onclick="showAllCode()">Show All Code</div>
+    <div onclick="hideAllCode()">Hide All Code</div>
+  </div>
+</div>
+
+<script>
+  // Mostrar/ocultar opciones al hacer clic en el botón
+  document.getElementById("code-btn").onclick = function() {
+    var opts = document.getElementById("code-options");
+    opts.style.display = (opts.style.display === "block") ? "none" : "block";
+  };
+
+  // Mostrar todos los bloques de código
+  function showAllCode(){
+    document.querySelectorAll("pre.r, pre.python, pre code").forEach(el => el.style.display="block");
+  }
+
+  // Ocultar todos los bloques de código
+  function hideAllCode(){
+    document.querySelectorAll("pre.r, pre.python, pre code").forEach(el => el.style.display="none");
+  }
+</script>

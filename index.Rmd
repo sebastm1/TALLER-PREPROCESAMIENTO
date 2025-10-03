@@ -10,6 +10,8 @@ output:
     number_sections: true
     css: styles.css
     highlight: "pygments"
+    includes:
+      after_body: code-toggle.html
 ---
 
 ```{r setup, include=FALSE}
@@ -103,7 +105,7 @@ Con nuestra herramienta de datos ya forjada y afinada, comienza la fase de explo
 #### **Distribución de la muestra por departamentos**
 Antes de analizar el rendimiento, necesitamos mapear el terreno: ¿de dónde proviene nuestra información? Este mapa nos muestra la concentración de datos a nivel nacional.
 
-```{r echo=FALSE}
+```{r}
 #obtencion de frecuencia en la muestra
 datos_freq <- Datos_ImputR %>%
   count(departamento)
@@ -122,7 +124,7 @@ El negocio no es estático. Para entender el presente, debemos mirar al pasado. 
 **Explicación del código:**
 *Filtramos los datos para los años 2007 y 2017. geom_col con position = "dodge" crea un gráfico de barras comparativo que muestra la evolución del rendimiento mediano en cada departamento.*
 
-```{r echo=FALSE}
+```{r }
 datos_comparacion <- Datos_ImputR %>%
   filter(año %in% c(2007, 2017)) %>%
   group_by(departamento, año) %>%
@@ -143,7 +145,7 @@ Esta visualización nos cuenta la historia completa a través del tiempo. ¿Qué
 **Explicación del código:**
 *Agrupamos por año y departamento para calcular el rendimiento mediano anual. geom_line conecta los puntos a lo largo del tiempo, revelando la trayectoria de cada departamento.*
 
-```{r echo=FALSE}
+```{r }
 tendencia_anual <- Datos_ImputR %>%
   group_by(año, departamento) %>%
   summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')

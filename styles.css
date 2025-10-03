@@ -6,14 +6,46 @@ h1, h2, h3 {
   text-align: center;
   font-weight: bold;
 }
-/* Forzar que los encabezados h4 aparezcan visibles en el TOC lateral */
-.tocify .tocify-item > .tocify-subheader .tocify-subheader {
-  display: block !important;
+/* Botón flotante arriba a la derecha */
+#code-menu {
+  position: fixed;
+  top: 15px;
+  right: 20px;
+  z-index: 9999;
+  font-family: Arial, sans-serif;
 }
 
-/* Ajustar estilo de los h4 en el TOC */
-.tocify .tocify-subheader .tocify-subheader .tocify-item {
-  margin-left: 20px;   /* sangría */
-  font-size: 90%;      /* más pequeño */
-  color: #a94442;      /* rojo vino, cambia si quieres */
+#code-btn {
+  background: #8B0000;  /* rojo oscuro */
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#code-btn:hover {
+  background: #a30000;
+}
+
+#code-options {
+  display: none;
+  position: absolute;
+  top: 35px;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  min-width: 120px;
+  box-shadow: 0px 2px 5px rgba(0,0,0,0.3);
+}
+
+#code-options div {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+#code-options div:hover {
+  background: #f2f2f2;
 }
