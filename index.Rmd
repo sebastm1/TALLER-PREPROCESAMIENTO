@@ -42,26 +42,30 @@ Nuestra historia comienza con un universo de información sobre toda la producci
 *Explicación del código:Se cargan las librerías que nos acompañarán en este viaje analítico. Luego, se leen los datos y, mediante filter(), se segmenta el dataframe para crear una nueva base de datos que contiene exclusivamente los registros de MAÍZ*
 
 ```{r message=FALSE, warning=FALSE, results='hide'}
-library(dplyr);library(stringr);library(ggplot2);library(tidyverse);library(knitr);library(kableExtra)
+library(dplyr);library(stringr);library(ggplot2);library(tidyverse);library(knitr);library(kableExtra);library(RColorBrewer)
 library(patchwork);library(tidyr);library(naniar);library(corrplot);library(htmltools)
-library(crosstalk);library(mice);library(plotly);library(readxl);library(table1);library(highcharter)
+library(crosstalk);library(mice);library(plotly);library(readxl);library(table1);library(highcharter);library(brew)
 
-datos <- readxl::read_excel("C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx")
+datos <- readxl::read_excel("./DATOS/eva_df_2025.xlsx")
 level_CULTIVO <- c(MAIZ = "MAIZ", maiz = "MAIZ")
 datos <- datos %>% mutate(CULTIVO = recode(CULTIVO, !!!level_CULTIVO))
 datos <- datos %>% filter(CULTIVO == "MAIZ")
 ```
-#### **Carga de Librerías y Segmentación del Cultivo**
+#### **Cambio de Títulos Originales y Eliminación de Columnas Innecesarias**
 
-Los nombres de las columnas originales son poco intuitivos, lo que puede llevar a errores. Para trabajar de manera eficiente y clara, debemos establecer un lenguaje común.
+Los nombres de las columnas originales son poco intuitivos, lo que puede generar confusión o errores durante el análisis. Para trabajar de manera más eficiente y con un lenguaje común dentro del equipo, se redefinen los nombres de las variables con etiquetas claras y estandarizadas.
 
+Además, se eliminan aquellas columnas que no aportan información relevante para el análisis actual con el fin de optimizar la base de datos y facilitar la interpretación de los resultados
 **Explicación del código:**
-*Se define un vector con nombres claros y estandarizados, y se asigna directamente a las columnas del dataframe datos. Ahora, todos en el equipo sabemos exactamente a qué se refiere cada variable.*
+*Primero, se define un vector con los nuevos nombres de las columnas y se asigna directamente a la base de datos. Luego, se eliminan las variables innecesarias con select, dejando únicamente aquellas que serán utilizadas en los análisis posteriores.*
 ```{r message=TRUE,results='hide'}
 nuevos_nombres <- c("departamento", "municipio", "grupo", "cultivo", "año",
                     "area_sembrada", "area_cosechada", "t_produccion",
                     "estado_fisico", "ciclo_cultivo")
 names(datos) <- nuevos_nombres
+
+datos <- datos %>% 
+  select(-ciclo_cultivo, -estado_fisico, -grupo)
 ```
 
 
@@ -94,14 +98,11 @@ Antes de poder limpiar o modelar, un analista debe actuar como un detective. El 
 table1(~ area_sembrada + area_cosechada + t_produccion + rendimiento | departamento, 
        data = datos)
 
-
-vis_miss(datos)
-
 datos %>%
   filter(is.na(rendimiento)) %>%
-  select(-rendimiento) %>% # Quitamos la columna 'rendimiento'
-  head(10) %>% # Mostramos solo las primeras 10 filas para el informe
-  kable(caption = "Muestra de 10 Registros con Rendimiento Faltante") %>%
+  select(-rendimiento) %>% 
+  head(10) %>% 
+  kable(caption = "Muestra de 10 Registros con Rendimiento Faltante de 90 ") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
 ```
 
@@ -120,13 +121,15 @@ datos_limpios <- datos %>%
 datos_imputados <- datos %>%
   group_by(departamento) %>%
   mutate(
-    rendimiento = ifelse(is.na(rendimiento), 
-                          mean(rendimiento, na.rm = TRUE), 
-                          rendimiento)
+    rendimiento = ifelse(
+      is.na(rendimiento),
+      mean(rendimiento, na.rm = TRUE),
+      rendimiento
+    )
   ) %>%
   ungroup()
 # Imputación de datos faltantes con MICE
-imputR <- mice(datos, m = 5, maxit = 5, seed = 123, print = FALSE) 
+imputR <- mice(datos, m = 5,method = "pmm", maxit = 5, seed = 123, print = FALSE) 
 Datos_ImputR <- complete(imputR)
 
 datos_todos <- bind_rows(
@@ -145,10 +148,63 @@ ggplot(datos_todos, aes(x = departamento, y = rendimiento, fill = metodo_imputac
   theme_minimal(base_size = 12) +
   theme(plot.title = element_text(face = "bold", color = "darkred", hjust = 0.5))
 
-
 ```
 **Análisis de los Resultados**
 *Se observó que las distribuciones de rendimiento para cada departamento eran prácticamente idénticas en los tres casos. Esta falta de variación se explica por la baja proporción de datos faltantes en el conjunto de datos (aproximadamente un 1%). Como regla general, cuando la cantidad de datos faltantes es inferior al 5%, el riesgo de introducir un sesgo significativo en los resultados es bajo, independientemente del método que se elija. A pesar de que el impacto fue insignificante, se optó por utilizar la imputación con MICE como método definitivo para conservar la totalidad de los registros, asegurando un conjunto de datos completo y robusto. El resultado es Datos_ImputR, nuestro set de datos final: completo, limpio y confiable para el análisis.*
+
+#### **Tratamiento Final de Outliers: Filtrado por Desviación Estándar**
+
+En la comparación de los métodos de imputación, nos percatamos de que nuestros datos, incluso después de ser completados, presentaban numerosos datos atípicos comunes en varios departamentos. Para generar una base de datos más robusta y preparada para modelos sensibles a valores extremos, el siguiente paso es tratar estos outliers.
+
+Para esto, optamos por utilizar el método del Z-score (o regla de las 3 desviaciones estándar). Si bien existen métodos más robustos a la asimetría como el de Tukey (IQR), elegimos el Z-score por ser un criterio estándar, objetivo y fácilmente interpretable. Este método nos permite aislar el cuerpo central de los datos, eliminando de forma rigurosa solo aquellos puntos que se encuentran en las colas más extremas de la distribución de cada departamento, asegurando así un conjunto de datos más homogéneo para los análisis posteriores.
+
+**Explicación del código:**
+*El proceso se divide en tres partes. Primero, realizamos el filtrado: agrupamos los datos por departamento y, para cada uno, calculamos su media y 3 veces su desviación estándar para definir los límites superior e inferior. Luego, eliminamos todas las filas cuyo rendimiento se encuentre fuera de este rango. Segundo, realizamos la visualización comparativa: creamos dos gráficos de caja, uno "antes" y otro "después" del filtrado, para confirmar visualmente el efecto de la limpieza. Finalmente, con la línea Datos_ImputR <- Datos_Sin_Outliers_ZScore, tomamos la decisión de actualizar nuestro data frame principal, continuando el resto del análisis con esta versión de los datos ya sin los outliers más extremos.*
+
+```{r}
+filas_originales <- nrow(Datos_ImputR)
+
+Datos_Sin_Outliers_ZScore <- Datos_ImputR %>%
+  group_by(departamento) %>%
+  mutate(
+    media_depto = mean(rendimiento, na.rm = TRUE),
+    sd_depto = sd(rendimiento, na.rm = TRUE),
+    limite_superior = media_depto + 3 * sd_depto,
+    limite_inferior = media_depto - 3 * sd_depto
+  ) %>%
+  filter(rendimiento >= limite_inferior & rendimiento <= limite_superior) %>%
+  ungroup() %>%
+  select(-media_depto, -sd_depto, -limite_superior, -limite_inferior)
+
+filas_finales <- nrow(Datos_Sin_Outliers_ZScore)
+
+rango_rendimiento <- range(Datos_ImputR$rendimiento, na.rm = TRUE)
+
+p1 <- ggplot(Datos_ImputR, aes(x = reorder(departamento, rendimiento, FUN = median), y = rendimiento)) +
+  geom_boxplot(fill = "#E86C1F", alpha = 0.8) +
+  coord_flip(ylim = rango_rendimiento) +
+  labs(
+    title = "ANTES de Eliminar Outliers",
+    x = "Departamento",
+    y = "Rendimiento (Ton/Ha)"
+  ) +
+  theme_minimal()
+
+p2 <- ggplot(Datos_Sin_Outliers_ZScore, aes(x = reorder(departamento, rendimiento, FUN = median), y = rendimiento)) +
+  geom_boxplot(fill = "skyblue", alpha = 0.8) +
+  coord_flip(ylim = rango_rendimiento) + 
+  labs(
+    title = "DESPUÉS de Eliminar Outliers (Método Z-Score)",
+    x = "Departamento",
+    y = "Rendimiento (Ton/Ha)"
+  ) +
+  theme_minimal()
+
+p1 / p2
+
+Datos_ImputR <- Datos_Sin_Outliers_ZScore
+```
+
 
 ### **Extrayendo las Respuestas**
 
@@ -158,20 +214,62 @@ Con nuestra herramienta de datos ya forjada y afinada, comienza la fase de explo
 Antes de analizar el rendimiento, necesitamos mapear el terreno: ¿de dónde proviene nuestra información? Este mapa nos muestra la concentración de datos a nivel nacional.
 
 ```{r}
-#obtencion de frecuencia en la muestra
 datos_freq <- Datos_ImputR %>%
   count(departamento)
-
-#grafico de distribucion de muestra
-p5 <- plot_ly(datos_freq, labels = ~departamento, values = ~n, type = "pie") %>%
-  layout(title = list(text = "<b>DISTRIBUCIÓN DE LA MUESTRA POR DEPARTAMENTOS</b>",
-      font = list(color = "darkred",  size = 15),x = 0.5, xanchor = "center"))
+numero_de_colores <- nrow(datos_freq)
+paleta_rojos <- brewer.pal(n = numero_de_colores, name = "Reds")
+p5 <- plot_ly(datos_freq, 
+              labels = ~departamento, 
+              values = ~n, 
+              type = "pie",
+              marker = list(colors = paleta_rojos, 
+                            line = list(color = '#FFFFFF', width = 1))) %>%
+  layout(title = list(text = "<b> 4.1. Distribución de la muestra por Departamento</b>",
+                      font = list(color = "darkred", size = 15), x = 0.5, xanchor = "center"))
 p5
 ```
 **Análisis de los Resultados**
 *La distribución de la muestra está bien repartida entre los departamentos, lo que es positivo para el análisis, ya que las conclusiones generales no estarán fuertemente sesgadas por la información de una sola región.*
 
 *Llama la atención que Valle del Cauca, a pesar de ser el departamento con la menor cantidad de registros en este conjunto de datos, fue el que demostró tener el rendimiento más alto y consistente en los análisis anteriores. Esto sugiere que su alta productividad no es un artefacto de tener una muestra más grande, sino una característica real de la región.*
+
+#### **comportamiento del rendimiento del cultivo por departamento.**
+
+Una vez que mapeamos la procedencia de nuestros datos, el siguiente paso es analizar al protagonista de nuestra historia: el rendimiento. Este gráfico nos permite comparar la eficiencia productiva de cada departamento, no solo en su valor típico, sino en toda su distribución, revelando su consistencia, variabilidad y la presencia de casos excepcionales.
+
+**Explicación del código:**
+*Utilizamos ggplot2 para generar un diagrama de cajas (geom_boxplot) por cada departamento. La función reorder() ordena los departamentos en el eje X según su rendimiento mediano, lo que facilita una comparación visual inmediata del desempeño. Finalmente, scale_fill_manual() aplica la paleta de colores del espectro rojo para mantener la consistencia visual del informe.*
+```{r}
+
+deptos_ordenados <- Datos_ImputR %>%
+  group_by(departamento) %>%
+  summarise(mediana_rendimiento = median(rendimiento, na.rm = TRUE)) %>%
+  arrange(mediana_rendimiento) %>%
+  pull(departamento)
+paleta_rojos <- colorRampPalette(brewer.pal(9, "Reds"))(length(deptos_ordenados))
+datos_para_hc <- Datos_ImputR %>%
+  mutate(departamento = factor(departamento, levels = deptos_ordenados))
+p6 <- hchart(
+  datos_para_hc,
+  "boxplot",
+  hcaes(x = departamento, y = rendimiento, group = departamento)
+) %>%
+  hc_colors(paleta_rojos) %>%
+  hc_title(
+    text = "<b style='color:#8B0000; font-size:18px;'>4.2. Comportamiento del Rendimiento del Maíz por Departamento</b>"
+  ) %>%
+  hc_xAxis(title = list(text = "Departamento")) %>%
+  hc_yAxis(title = list(text = "Rendimiento (Toneladas/Hectárea)")) %>%
+  hc_legend(enabled = FALSE) %>%
+  hc_chart(backgroundColor = "transparent")
+p6
+
+```
+
+**Análisis de los Resultados**
+*El gráfico revela un claro ranking de desempeño, ordenado de menor a mayor rendimiento mediano. Valle del Cauca y Huila se consolidan como el grupo de alto rendimiento, con las medianas más altas. En contraste, Antioquia, Cundinamarca y Santander forman un grupo de menor rendimiento típico.*
+
+*Sin embargo, la historia más profunda está en la variabilidad y los outliers: Valle del Cauca muestra una gran dispersión en sus datos (una caja muy alta), indicando que un amplio rango de rendimientos es normal para la región. Por otro lado, los departamentos de bajo rendimiento presentan cajas más compactas pero con numerosos outliers en la parte superior. Esto nos dice que, aunque su rendimiento habitual es modesto, tienen un historial de casos excepcionales de alta productividad, un patrón que difiere fundamentalmente del comportamiento del Valle del Cauca, donde esos mismos valores altos son parte de la norma.*
 
 #### **Comparación del rendimiento en 2007 vs. 2017**
 El negocio no es estático. Para entender el presente, debemos mirar al pasado. Este análisis nos cuenta la historia de una década de cambio.
@@ -182,10 +280,10 @@ El negocio no es estático. Para entender el presente, debemos mirar al pasado. 
 ```{r }
 datos_comparacion <- Datos_ImputR %>% filter(año %in% c(2007, 2017)) %>% group_by(departamento, año) %>% summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')
 
-p6 <- datos_comparacion %>%
+p7 <- datos_comparacion %>%
   hchart("column", 
          hcaes(x = departamento, y = rendimiento_mediano, group = año)) %>%
-  hc_title(text = "4.2. Comparación de Rendimiento Mediano: 2007 vs. 2017") %>%
+  hc_title(text = "<b> 4.3. Comparación de Rendimiento Mediano: 2007 vs. 2017 <b/>") %>%
   hc_yAxis(min = 0,
            max = 3.5,
            tickInterval = 0.5,
@@ -193,11 +291,11 @@ p6 <- datos_comparacion %>%
   hc_xAxis(title = list(text = "Departamento")) %>%
   hc_colors(c("#E86C1F", "#781C2E")) %>%
   hc_legend(enabled = TRUE)
-p6
+p7
 
 ```
 **Análisis de los Resultados**
-*[Espacio para su análisis e interpretación. ¿Qué departamentos mejoraron su rendimiento en esa década? ¿Alguno empeoró? ¿Qué cambios importantes se observan?]*
+*Se observa una tendencia de mejora generalizada, ya que todos los departamentos analizados incrementaron su rendimiento mediano en el transcurso de la década. El cambio más notable es el de Huila, que experimentó un crecimiento espectacular, pasando de ser un competidor fuerte en 2007 a posicionarse como el líder en rendimiento en 2017, superando incluso a Valle del Cauca. A pesar de la mejora colectiva, la brecha de productividad entre los departamentos de alto rendimiento (Huila y Valle del Cauca) y los de menor rendimiento (Antioquia, Cundinamarca y Santander) se mantuvo, evidenciando diferencias estructurales en la eficiencia agrícola regional.*
 
 #### **Tendencia del rendimiento a través de los años**
 Esta visualización nos cuenta la historia completa a través del tiempo. ¿Qué departamentos han mostrado un crecimiento sostenido? ¿Cuáles se han estancado o han sido erráticos?
@@ -210,8 +308,8 @@ tendencia_anual <- Datos_ImputR %>%
   group_by(año, departamento) %>%
   summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')
 
-p7 <- highchart() %>%
-  hc_title(text = "4.3. Tendencia Anual del Rendimiento por Departamento") %>%
+p8 <- highchart() %>%
+  hc_title(text = "<b> 4.4. Tendencia Anual del Rendimiento por Departamento <b/>") %>%
   hc_xAxis(title = list(text = "Año"),
            categories = sort(unique(tendencia_anual$año))) %>%
   hc_yAxis( max = 3.5,tickInterval = 0.5,title = list(text = "Rendimiento Mediano (Ton/Ha)")) %>%
@@ -221,7 +319,7 @@ p7 <- highchart() %>%
   hc_colors(c("#781C2E", "#E86C1F", "#FFB347", "#5D001E", "#C1440E")) %>%
   hc_legend(enabled = TRUE, align = "center", verticalAlign = "bottom") %>%
   hc_chart(backgroundColor = "#FFFFFF") 
-p7
+p8
 ```
 **Análisis de los Resultados**
 *[Espacio para su análisis e interpretación. ¿Qué departamentos mejoraron su rendimiento en esa década? ¿Alguno empeoró? ¿Qué cambios importantes se observan?]*
@@ -235,17 +333,17 @@ Para la toma de decisiones estratégicas, los directivos necesitan una visión g
 ```{r}
 browsable(
   tagList(
-    # fila 1
     bscols(
-      widths = c(6, 6),   # mitad y mitad
-      p5,                 # plotly
-      p6                  # highchart
+      widths = c(12),  
+      p5                
     ),
-    # fila 2
-    div(style="margin-top:20px;", p7)  # ocupa toda la fila
+    bscols(
+      widths = c(6, 6),  
+      p6, p7             
+    ),
+    div(style="margin-top:20px;", p8) 
   )
 )
-
 ```
 
 #### **Tabla de Indicadores Descriptivos**
