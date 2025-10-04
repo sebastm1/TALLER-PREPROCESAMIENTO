@@ -47,12 +47,14 @@ p1 <-ggplot(data = datos, aes(x = area_cosechada, y = t_produccion)) +
   geom_point(aes(color = departamento), alpha = 0.6, size = 3) +
   geom_smooth(method = "lm", color = "firebrick", se = FALSE) +
   labs(
-    title = "Relación entre Área Cosechada y Producción de Maíz",
-    x = "Área Cosechada (Hectáreas)",
+    title = "Relacion entre rea Cosechada y Producci de Maz",
+    x = "rea Cosechada (Hectáreas)",
     y = "Producción (Toneladas)",
     color = "Departamento"
   ) +
   theme_minimal()
+print(p1)
+
 datos_imputados <- datos %>%
   group_by(departamento) %>%
   mutate(
@@ -90,7 +92,9 @@ ggplot(datos, aes(x = departamento, y = rendimiento)) +
     title = "Distribución del Rendimiento por Departamento",
     x = "Departamento",
     y = "Rendimiento (unidades)"
-  )
+  ) +
+  scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, 1))
+
 
 summary()
  ggplot(datos_imputados, aes(x = departamento, y = rendimiento)) +
@@ -222,6 +226,7 @@ ggplot(Datos_ImputR, aes(x = reorder(departamento, rendimiento, FUN = median),
   theme(legend.position = "none")
 
 
+
 Datos_ImputR <- Datos_ImputR %>%
   mutate(id_fila = row_number())
 
@@ -302,15 +307,4 @@ ggplot(data = tendencia_anual, aes(x = año, y = rendimiento_mediano, color = de
   
   theme(legend.position = "bottom",
         axis.text.x = element_text(angle = 0, hjust = 1))
-
-# deploy.R
-library(rmarkdown)
-
-# Renderiza el Rmd a HTML
-render("taller.Rmd", output_format = "html_document", output_file = "index.html")
-
-# Ejecuta git desde R
-system("git add .")
-system('git commit -m "Auto update HTML from Rmd"')
-system("git push origin main")  # cambia 'main' por tu rama si es distinto
 

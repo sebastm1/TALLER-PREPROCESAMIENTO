@@ -43,7 +43,7 @@ Nuestra historia comienza con un universo de información sobre toda la producci
 ```{r message=FALSE, warning=FALSE, results='hide'}
 library(dplyr);library(stringr);library(ggplot2);library(tidyverse);
 library(patchwork);library(tidyr);library(naniar);library(corrplot)
-library(mice);library(plotly);library(readxl);library(table1)
+library(mice);library(plotly);library(readxl);library(table1);library(highcharter)
 
 datos <- readxl::read_excel("C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx")
 level_CULTIVO <- c(MAIZ = "MAIZ", maiz = "MAIZ")
@@ -102,7 +102,7 @@ p1 <- ggplot(datos_limpios, aes(x = departamento, y = rendimiento)) +
     x = "Departamento",
     y = "Rendimiento (unidades)"
   ) +
-  scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, 1))
+  scale_y_continuous(limits = c(0, 150))
 
 
 #imputar por departamento
@@ -111,7 +111,7 @@ datos_imputados <- datos %>%
   group_by(departamento) %>%
   mutate(
     t_produccion = ifelse(is.na(t_produccion), 
-                          median(t_produccion, na.rm = TRUE), 
+                          mean(t_produccion, na.rm = TRUE), 
                           t_produccion)
   ) %>%
   ungroup()
@@ -171,16 +171,21 @@ El negocio no es estático. Para entender el presente, debemos mirar al pasado. 
 *Filtramos los datos para los años 2007 y 2017. geom_col con position = "dodge" crea un gráfico de barras comparativo que muestra la evolución del rendimiento mediano en cada departamento.*
 
 ```{r }
-datos_comparacion <- Datos_ImputR %>%
-  filter(año %in% c(2007, 2017)) %>%
-  group_by(departamento, año) %>%
-  summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')
+datos_comparacion <- Datos_ImputR %>% filter(año %in% c(2007, 2017)) %>% group_by(departamento, año) %>% summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')
 
-ggplot(datos_comparacion, aes(x = rendimiento_mediano, y = reorder(departamento, rendimiento_mediano), fill = as.factor(año))) +
-  geom_col(position = "dodge") +
-  scale_fill_manual(name = "Año", values = c("2007" = "orange", "2017" = "skyblue")) +
-  labs(title = "3. Comparación de Rendimiento Mediano: 2007 vs. 2017", x = "Rendimiento Mediano (Ton/Ha)", y = "Departamento") +
-  theme_minimal()
+p2<- datos_comparacion %>%
+  hchart("column", 
+         hcaes(x = departamento, y = rendimiento_mediano, group = año)) %>%
+  hc_title(text = "4.2. Comparación de Rendimiento Mediano: 2007 vs. 2017") %>%
+  hc_yAxis(min = 0,
+           max = 3.5,
+           tickInterval = 0.5,
+           title = list(text = "Rendimiento Mediano (Ton/Ha)")) %>%
+  hc_xAxis(title = list(text = "Departamento")) %>%
+  hc_colors(c("#E86C1F", "#781C2E")) %>%
+  hc_legend(enabled = TRUE)
+p2
+
 ```
 **Análisis de los Resultados**
 *[Espacio para su análisis e interpretación. ¿Qué departamentos mejoraron su rendimiento en esa década? ¿Alguno empeoró? ¿Qué cambios importantes se observan?]*
@@ -196,13 +201,18 @@ tendencia_anual <- Datos_ImputR %>%
   group_by(año, departamento) %>%
   summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')
 
-ggplot(tendencia_anual, aes(x = año, y = rendimiento_mediano, color = departamento)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2) +
-  scale_x_continuous(breaks = seq(min(tendencia_anual$año), max(tendencia_anual$año), by = 2)) +
-  labs(title = "4. Tendencia Anual del Rendimiento por Departamento", x = "Año", y = "Rendimiento Mediano (Ton/Ha)") +
-  theme_minimal() +
-  theme(legend.position = "bottom")
+p3<- highchart() %>%
+  hc_title(text = "4.3. Tendencia Anual del Rendimiento por Departamento") %>%
+  hc_xAxis(title = list(text = "Año"),
+           categories = sort(unique(tendencia_anual$año))) %>%
+  hc_yAxis( max = 3.5,tickInterval = 0.5,title = list(text = "Rendimiento Mediano (Ton/Ha)")) %>%
+  hc_add_series(data = tendencia_anual, 
+                type = "line",
+                hcaes(x = año, y = rendimiento_mediano, group = departamento)) %>%
+  hc_colors(c("#781C2E", "#E86C1F", "#FFB347", "#5D001E", "#C1440E")) %>%
+  hc_legend(enabled = TRUE, align = "center", verticalAlign = "bottom") %>%
+  hc_chart(backgroundColor = "#FFFFFF") 
+p3
 ```
 **Análisis de los Resultados**
 *[Espacio para su análisis e interpretación. ¿Qué departamentos mejoraron su rendimiento en esa década? ¿Alguno empeoró? ¿Qué cambios importantes se observan?]*
