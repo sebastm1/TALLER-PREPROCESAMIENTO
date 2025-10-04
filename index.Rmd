@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ### **Resumen**
 
 En este informe se documenta el viaje de transformar un conjunto de datos brutos de las Evaluaciones Agropecuarias Municipales (EVA) en inteligencia de negocio para una empresa agrícola líder. El objetivo es caracterizar la producción de Maíz, estandarizando la información y corrigiendo inconsistencias para construir una base sólida que permita identificar los departamentos más productivos, detectar anomalías significativas y descubrir las tendencias que definirán las estrategias futuras de la compañía.
-***
+
 
 ### **Introducción**
 
@@ -40,10 +40,11 @@ Todo gran análisis comienza con datos de alta calidad. Esta primera fase es la 
 Nuestra historia comienza con un universo de información sobre toda la producción agrícola de la empresa. Para encontrar las respuestas sobre el maíz, nuestro primer paso es enfocar el lente, aislando la señal de nuestro cultivo de interés del ruido generado por los demás.
 
 *Explicación del código:Se cargan las librerías que nos acompañarán en este viaje analítico. Luego, se leen los datos y, mediante filter(), se segmenta el dataframe para crear una nueva base de datos que contiene exclusivamente los registros de MAÍZ*
+
 ```{r message=FALSE, warning=FALSE, results='hide'}
-library(dplyr);library(stringr);library(ggplot2);library(tidyverse);
-library(patchwork);library(tidyr);library(naniar);library(corrplot)
-library(mice);library(plotly);library(readxl);library(table1);library(highcharter)
+library(dplyr);library(stringr);library(ggplot2);library(tidyverse);library(knitr);library(kableExtra)
+library(patchwork);library(tidyr);library(naniar);library(corrplot);library(htmltools)
+library(crosstalk);library(mice);library(plotly);library(readxl);library(table1);library(highcharter)
 
 datos <- readxl::read_excel("C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx")
 level_CULTIVO <- c(MAIZ = "MAIZ", maiz = "MAIZ")
@@ -81,11 +82,32 @@ Producir mucho no es sinónimo de ser eficiente. La empresa necesita una métric
     )
   )
 ```
+#### **Identificación de Datos Faltantes**
 
+Antes de poder limpiar o modelar, un analista debe actuar como un detective. El primer paso es realizar un diagnóstico completo para encontrar los "huecos" en la información. No podemos tratar un problema que no entendemos, por lo que este apartado se dedica a mapear dónde y cuántos datos faltantes existen en nuestro conjunto de datos.
+
+**Explicación del código:**
+*Se utilizan tres herramientas complementarias. Primero, summary() nos da un conteo rápido y numérico de los NAs en cada columna. Segundo, vis_miss() del paquete naniar genera una "radiografía" visual de la base de datos, permitiéndonos identificar patrones de datos faltantes de un solo vistazo. Finalmente, con filter(), extraemos y creamos una tabla específica con las filas exactas donde nuestra variable de interés, rendimiento, tiene información faltante, para una inspección detallada.*
+
+```{r message=TRUE}
+# 1. Resumen numérico de datos faltantes
+table1(~ area_sembrada + area_cosechada + t_produccion + rendimiento | departamento, 
+       data = datos)
+
+
+vis_miss(datos)
+
+datos %>%
+  filter(is.na(rendimiento)) %>%
+  select(-rendimiento) %>% # Quitamos la columna 'rendimiento'
+  head(10) %>% # Mostramos solo las primeras 10 filas para el informe
+  kable(caption = "Muestra de 10 Registros con Rendimiento Faltante") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+```
 
 #### **Imputación de Datos Faltantes**
 
-Para asegurar la calidad y robustez del análisis, se realizó un preprocesamiento metódico de los datos. Primero, se estandarizaron los nombres de los departamentos a mayúsculas para unificar los registros. A continuación, para tratar los datos faltantes, se evaluaron tres estrategias: ignorar los registros, imputar con la mediana por deparmento y utilizar una imputación múltiple con el método MICE.
+Para asegurar la calidad del análisis, se evaluó el impacto de diferentes estrategias para el tratamiento de los datos faltantes. Se realizó una comparación visual (mediante diagramas de caja) de las distribuciones de rendimiento bajo tres escenarios: eliminando los registros faltantes, imputando con la media por departamento y usando una imputación múltiple con MICE.
 
 ```{r message=TRUE}
 # 1. Estandarizar texto a mayúsculas
@@ -94,53 +116,39 @@ datos <- datos %>%
 #omitir datos
 datos_limpios <- datos %>%
   filter(!is.na(datos$rendimiento))
-
-p1 <- ggplot(datos_limpios, aes(x = departamento, y = rendimiento)) +
-  geom_boxplot() +
-  labs(
-    title = "Distribución del Rendimiento por Departamento omitiendo NA",
-    x = "Departamento",
-    y = "Rendimiento (unidades)"
-  ) +
-  scale_y_continuous(limits = c(0, 150))
-
-
 #imputar por departamento
-
 datos_imputados <- datos %>%
   group_by(departamento) %>%
   mutate(
-    t_produccion = ifelse(is.na(t_produccion), 
-                          mean(t_produccion, na.rm = TRUE), 
-                          t_produccion)
+    rendimiento = ifelse(is.na(rendimiento), 
+                          mean(rendimiento, na.rm = TRUE), 
+                          rendimiento)
   ) %>%
   ungroup()
-p2 <- ggplot(datos_imputados, aes(x = departamento, y = rendimiento)) +
-  geom_boxplot() +
-  labs(
-    title = "Distribución del Rendimiento por Departamento imputados por departamento",
-    x = "Departamento",
-    y = "Rendimiento (unidades)"
-  ) +
-  scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, 1))
-
 # Imputación de datos faltantes con MICE
 imputR <- mice(datos, m = 5, maxit = 5, seed = 123, print = FALSE) 
 Datos_ImputR <- complete(imputR)
 
-p3 <- ggplot(Datos_ImputR, aes(x = departamento, y = rendimiento)) +
-  geom_boxplot() +
+datos_todos <- bind_rows(
+  datos_limpios %>% mutate(metodo_imputacion = "Sin NA"),
+  datos_imputados %>% mutate(metodo_imputacion = "Imputacion Dept"),
+  Datos_ImputR %>% mutate(metodo_imputacion = "Mice")
+)
+ggplot(datos_todos, aes(x = departamento, y = rendimiento, fill = metodo_imputacion)) +
+  geom_boxplot(position = position_dodge(width = 0.8), outlier.alpha = 0.3) +
   labs(
-    title = "Distribución del Rendimiento por Departamento imputados por mice",
+    title = "Comparación de Métodos de Imputación de Rendimiento",
     x = "Departamento",
     y = "Rendimiento (unidades)"
   ) +
-  scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, 1))
+  scale_fill_manual(values = c("Sin NA" = "#781C2E", "Imputacion Dept" = "#E86C1F", "Mice" = "#FFB347")) +
+  theme_minimal(base_size = 12) +
+  theme(plot.title = element_text(face = "bold", color = "darkred", hjust = 0.5))
 
-print((p1+p2)/p3)
+
 ```
 **Análisis de los Resultados**
-*Se observó que la imputación por la mediana, si bien completaba los datos, tendía a distorsionar la distribución al elevar el impacto de los outliers. Por otro lado, la imputación con MICE generó valores que no producían estimaciones negativas y cuyo comportamiento global era muy similar al de simplemente ignorar los datos. Dado que MICE nos permite conservar la totalidad de los registros sin introducir sesgos significativos, se eligió como el método definitivo. El resultado es Datos_ImputR, nuestro set de datos final: completo, limpio y confiable para el análisis.*
+*Se observó que las distribuciones de rendimiento para cada departamento eran prácticamente idénticas en los tres casos. Esta falta de variación se explica por la baja proporción de datos faltantes en el conjunto de datos (aproximadamente un 1%). Como regla general, cuando la cantidad de datos faltantes es inferior al 5%, el riesgo de introducir un sesgo significativo en los resultados es bajo, independientemente del método que se elija. A pesar de que el impacto fue insignificante, se optó por utilizar la imputación con MICE como método definitivo para conservar la totalidad de los registros, asegurando un conjunto de datos completo y robusto. El resultado es Datos_ImputR, nuestro set de datos final: completo, limpio y confiable para el análisis.*
 
 ### **Extrayendo las Respuestas**
 
@@ -225,7 +233,19 @@ Para la toma de decisiones estratégicas, los directivos necesitan una visión g
 *La librería patchwork nos permite componer un tablero combinando nuestros gráficos (g1, g2, g4) con una sintaxis simple e intuitiva (+ y /), como si armáramos un rompecabezas.*
 
 ```{r}
-print(p5 + p7 / p6)
+browsable(
+  tagList(
+    # fila 1
+    bscols(
+      widths = c(6, 6),   # mitad y mitad
+      p5,                 # plotly
+      p6                  # highchart
+    ),
+    # fila 2
+    div(style="margin-top:20px;", p7)  # ocupa toda la fila
+  )
+)
+
 ```
 
 #### **Tabla de Indicadores Descriptivos**
