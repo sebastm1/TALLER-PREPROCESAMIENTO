@@ -155,9 +155,10 @@ datos_freq <- Datos_ImputR %>%
   count(departamento)
 
 #grafico de distribucion de muestra
-plot_ly(datos_freq, labels = ~departamento, values = ~n, type = "pie") %>%
+p5 <- plot_ly(datos_freq, labels = ~departamento, values = ~n, type = "pie") %>%
   layout(title = list(text = "<b>DISTRIBUCIÓN DE LA MUESTRA POR DEPARTAMENTOS</b>",
       font = list(color = "darkred",  size = 15),x = 0.5, xanchor = "center"))
+p5
 ```
 **Análisis de los Resultados**
 *La distribución de la muestra está bien repartida entre los departamentos, lo que es positivo para el análisis, ya que las conclusiones generales no estarán fuertemente sesgadas por la información de una sola región.*
@@ -173,7 +174,7 @@ El negocio no es estático. Para entender el presente, debemos mirar al pasado. 
 ```{r }
 datos_comparacion <- Datos_ImputR %>% filter(año %in% c(2007, 2017)) %>% group_by(departamento, año) %>% summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')
 
-p2<- datos_comparacion %>%
+p6 <- datos_comparacion %>%
   hchart("column", 
          hcaes(x = departamento, y = rendimiento_mediano, group = año)) %>%
   hc_title(text = "4.2. Comparación de Rendimiento Mediano: 2007 vs. 2017") %>%
@@ -184,7 +185,7 @@ p2<- datos_comparacion %>%
   hc_xAxis(title = list(text = "Departamento")) %>%
   hc_colors(c("#E86C1F", "#781C2E")) %>%
   hc_legend(enabled = TRUE)
-p2
+p6
 
 ```
 **Análisis de los Resultados**
@@ -201,7 +202,7 @@ tendencia_anual <- Datos_ImputR %>%
   group_by(año, departamento) %>%
   summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')
 
-p3<- highchart() %>%
+p7 <- highchart() %>%
   hc_title(text = "4.3. Tendencia Anual del Rendimiento por Departamento") %>%
   hc_xAxis(title = list(text = "Año"),
            categories = sort(unique(tendencia_anual$año))) %>%
@@ -212,7 +213,7 @@ p3<- highchart() %>%
   hc_colors(c("#781C2E", "#E86C1F", "#FFB347", "#5D001E", "#C1440E")) %>%
   hc_legend(enabled = TRUE, align = "center", verticalAlign = "bottom") %>%
   hc_chart(backgroundColor = "#FFFFFF") 
-p3
+p7
 ```
 **Análisis de los Resultados**
 *[Espacio para su análisis e interpretación. ¿Qué departamentos mejoraron su rendimiento en esa década? ¿Alguno empeoró? ¿Qué cambios importantes se observan?]*
@@ -224,10 +225,7 @@ Para la toma de decisiones estratégicas, los directivos necesitan una visión g
 *La librería patchwork nos permite componer un tablero combinando nuestros gráficos (g1, g2, g4) con una sintaxis simple e intuitiva (+ y /), como si armáramos un rompecabezas.*
 
 ```{r}
-g1_dash <- Datos_ImputR %>% count(departamento, sort = TRUE) %>% mutate(departamento = reorder(departamento, n)) %>% ggplot(aes(x = n, y = departamento)) + geom_col(fill = "steelblue") + labs(subtitle = "1. Registros por Departamento", x = NULL, y = NULL) + theme_minimal()
-g2_dash <- ggplot(Datos_ImputR, aes(x = reorder(departamento, rendimiento, FUN = median), y = rendimiento)) + geom_boxplot(fill = "skyblue") + coord_flip() + labs(subtitle = "2. Distribución del Rendimiento", x = NULL, y = NULL) + theme_minimal()
-g4_dash <- ggplot(tendencia_anual, aes(x = año, y = rendimiento_mediano, color = departamento)) + geom_line(linewidth = 1) + labs(subtitle = "4. Tendencia Anual del Rendimiento", x = "Año", y = "Rendimiento (Ton/Ha)") + theme_minimal() + theme(legend.position = "none")
-(g1_dash + g2_dash) / g4_dash + plot_annotation(title = 'Tablero Gráfico Resumen del Cultivo de Maíz')
+print(p5 + p7 / p6)
 ```
 
 #### **Tabla de Indicadores Descriptivos**
