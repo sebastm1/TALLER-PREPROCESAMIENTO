@@ -11,12 +11,15 @@ library(mice)
 library(plotly)
 datos <- readxl::read_excel("C:/Users/johnn/Desktop/GESTION DE DATOS/TALLER PREPROCESAMIENTO/DATOS/eva_df_2025.xlsx")
 table(datos$CULTIVO)
+table(datos$DEPARTAMENTO)
+table(datos$ESTADO.FISICO.PRODUCCION)
 level_CULTIVO <- c(MAIZ = "MAIZ", maiz= "MAIZ")
 datos <- datos %>%
   mutate(CULTIVO = recode(CULTIVO, !!!level_CULTIVO))
 datos <- datos %>%
   filter(CULTIVO == "MAIZ")
 table(datos$DEPARTAMENTO)
+table(datos$ESTADO.FISICO.PRODUCCION)
 ncol(datos)
 nuevos_nombres <- c("departamento", "municipio", "grupo", "cultivo","año", 
                     "area_sembrada", "area_cosechada", "t_produccion", 
@@ -307,4 +310,175 @@ ggplot(data = tendencia_anual, aes(x = año, y = rendimiento_mediano, color = de
   
   theme(legend.position = "bottom",
         axis.text.x = element_text(angle = 0, hjust = 1))
+
+
+
+
+datos <- datos %>% 
+  mutate(departamento = str_to_upper(departamento))
+#omitir datos
+datos_limpios <- datos %>%
+  filter(!is.na(datos$rendimiento))
+#imputar por departamento
+datos_imputados <- datos %>%
+  group_by(departamento) %>%
+  mutate(
+    rendimiento = ifelse(is.na(rendimiento), 
+                          mean(rendimiento, na.rm = TRUE), 
+                          rendimiento)
+  ) %>%
+  ungroup()
+# Imputación de datos faltantes con MICE
+imputR <- mice(datos, m = 5, maxit = 5, seed = 123, print = FALSE) 
+Datos_ImputR <- complete(imputR)
+
+datos_todos <- bind_rows(
+  datos_limpios %>% mutate(metodo_imputacion = "Sin NA"),
+  datos_imputados %>% mutate(metodo_imputacion = "Imputacion Dept"),
+  Datos_ImputR %>% mutate(metodo_imputacion = "Mice")
+)
+ggplot(datos_todos, aes(x = departamento, y = rendimiento, fill = metodo_imputacion)) +
+  geom_boxplot(position = position_dodge(width = 0.8), outlier.alpha = 0.3) +
+  labs(
+    title = "Comparación de Métodos de Imputación de Rendimiento",
+    x = "Departamento",
+    y = "Rendimiento (unidades)"
+  ) +
+  scale_fill_manual(values = c("Sin NA" = "#781C2E", "Imputacion Dept" = "#E86C1F", "Mice" = "#FFB347")) +
+  theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(face = "bold", color = "darkred", hjust = 0.5))
+
+filas_originales <- nrow(Datos_ImputR)
+
+Datos_Sin_Outliers_ZScore <- Datos_ImputR %>%
+  group_by(departamento) %>%
+  mutate(
+    
+    media_depto = mean(rendimiento, na.rm = TRUE),
+    sd_depto = sd(rendimiento, na.rm = TRUE),
+    
+    limite_superior = media_depto + 3 * sd_depto,
+    limite_inferior = media_depto - 3 * sd_depto
+  ) %>%
+  
+  filter(rendimiento >= limite_inferior & rendimiento <= limite_superior) %>%
+  
+  ungroup() %>%
+  select(-media_depto, -sd_depto, -limite_superior, -limite_inferior)
+
+
+filas_finales <- nrow(Datos_Sin_Outliers_ZScore)
+
+rango_rendimiento <- range(Datos_ImputR$rendimiento, na.rm = TRUE)
+
+plot_antes <- ggplot(Datos_ImputR, aes(x = reorder(departamento, rendimiento, FUN = median), y = rendimiento)) +
+  geom_boxplot(fill = "#E86C1F", alpha = 0.8) +
+  coord_flip(ylim = rango_rendimiento) +
+  labs(
+    title = "ANTES de Eliminar Outliers",
+    x = "Departamento",
+    y = "Rendimiento (Ton/Ha)"
+  ) +
+  theme_minimal()
+
+plot_despues <- ggplot(Datos_Sin_Outliers_ZScore, aes(x = reorder(departamento, rendimiento, FUN = median), y = rendimiento)) +
+  geom_boxplot(fill = "skyblue", alpha = 0.8) +
+  coord_flip(ylim = rango_rendimiento) + 
+  labs(
+    title = "DESPUÉS de Eliminar Outliers (Método Z-Score)",
+    x = "Departamento",
+    y = "Rendimiento (Ton/Ha)"
+  ) +
+  theme_minimal()
+plot_antes / plot_despues
+
+Datos_ImputR<- Datos_Sin_Outliers_ZScore
+
+
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(mice)
+
+# 0) Preparar: estandarizar y crear id + indicador de NA original
+datos <- datos %>%
+  mutate(
+    departamento = str_to_upper(departamento),
+    .row_id = row_number(),
+    orig_missing = is.na(rendimiento)
+  )
+
+# 1) Observados (Sin NA) --> mantengo sólo filas con rendimiento observado
+df_sinNA <- datos %>%
+  filter(!orig_missing) %>%
+  transmute(departamento, rendimiento, imputed_flag = FALSE, metodo_imputacion = "Sin NA")
+
+# 2) Imputación por media por departamento (sin perder indicador)
+df_imput_media <- datos %>%
+  group_by(departamento) %>%
+  mutate(
+    rendimiento_imput = if_else(orig_missing,
+                                mean(rendimiento, na.rm = TRUE),
+                                rendimiento)
+  ) %>%
+  ungroup() %>%
+  transmute(departamento,
+            rendimiento = rendimiento_imput,
+            imputed_flag = orig_missing,
+            metodo_imputacion = "Imputacion Dept")
+
+# 3) Imputación con MICE (ejemplo: guardo la primera completación y conservo indicador orig_missing)
+#    Nota: mice maneja factores; si tienes columnas problemáticas conviene pasar solo las columnas necesarias.
+mice_input <- datos %>% select(.row_id, departamento, rendimiento) # puedes añadir más predictores si conviene
+imputR <- mice(mice_input, m = 5, maxit = 5, seed = 123, print = FALSE)
+Datos_ImputR_raw <- complete(imputR, 1)   # completado 1 (podrías probar otras completaciones o promediar resultados)
+# unir el indicador orig_missing mediante .row_id
+Datos_ImputR <- Datos_ImputR_raw %>%
+  left_join(datos %>% select(.row_id, orig_missing), by = ".row_id") %>%
+  transmute(departamento,
+            rendimiento,
+            imputed_flag = orig_missing,
+            metodo_imputacion = "MICE")
+
+# 4) Unir los 3 datasets (mismas columnas)
+datos_todos <- bind_rows(df_sinNA, df_imput_media, Datos_ImputR)
+
+# 5) Resumen: cuántas imputaciones por departamento / método
+tabla_imput <- datos_todos %>%
+  group_by(metodo_imputacion, departamento) %>%
+  summarise(
+    total = n(),
+    n_imputados = sum(imputed_flag, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(metodo_imputacion, departamento)
+
+print(tabla_imput)
+
+# 6) Resumen de medianas/varianzas por método (útil para comparar)
+resumen_stats <- datos_todos %>%
+  group_by(metodo_imputacion, departamento) %>%
+  summarise(
+    mediana = median(rendimiento, na.rm = TRUE),
+    sd = sd(rendimiento, na.rm = TRUE),
+    .groups = "drop"
+  )
+print(resumen_stats)
+
+# 7) Gráfico: boxplot agrupado + puntos imputados destacados en rojo
+ggplot(datos_todos, aes(x = departamento, y = rendimiento, fill = metodo_imputacion)) +
+  geom_boxplot(position = position_dodge(width = 0.8), outlier.alpha = 0.25) +
+  # puntos imputados (jitter sobre el dodge para que no se empalmen)
+  geom_jitter(data = filter(datos_todos, imputed_flag == TRUE),
+              aes(x = departamento, y = rendimiento),
+              position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.8),
+              color = "red", size = 1.2, alpha = 0.8, show.legend = FALSE) +
+  scale_fill_manual(values = c("Sin NA" = "#781C2E",
+                               "Imputacion Dept" = "#E86C1F",
+                               "MICE" = "#FFB347")) +
+  labs(title = "Comparación de Métodos de Imputación de Rendimiento",
+       x = "Departamento",
+       y = "Rendimiento (unidades)") +
+  theme_minimal(base_size = 12) +
+  theme(plot.title = element_text(face = "bold", color = "darkred", hjust = 0.5))
 
