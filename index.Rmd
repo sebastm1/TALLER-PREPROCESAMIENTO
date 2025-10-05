@@ -42,8 +42,7 @@ Nuestra historia comienza con un universo de información sobre toda la producci
 *Explicación del código:Se cargan las librerías que nos acompañarán en este viaje analítico. Luego, se leen los datos y, mediante filter(), se segmenta el dataframe para crear una nueva base de datos que contiene exclusivamente los registros de MAÍZ*
 
 ```{r message=FALSE, warning=FALSE, results='hide'}
-library(dplyr);library(stringr);library(ggplot2);library(tidyverse);library(knitr);library(kableExtra);library(RColorBrewer)
-library(patchwork);library(tidyr);library(naniar);library(corrplot);library(htmltools)
+library(dplyr);library(stringr);library(ggplot2);library(tidyverse);library(knitr);library(kableExtra);library(RColorBrewer);library(patchwork);library(tidyr);library(naniar);library(corrplot);library(htmltools)
 library(crosstalk);library(mice);library(plotly);library(readxl);library(table1);library(highcharter);library(brew)
 
 datos <- readxl::read_excel("./DATOS/eva_df_2025.xlsx")
@@ -191,7 +190,7 @@ p1 <- ggplot(Datos_ImputR, aes(x = reorder(departamento, rendimiento, FUN = medi
   theme_minimal()
 
 p2 <- ggplot(Datos_Sin_Outliers_ZScore, aes(x = reorder(departamento, rendimiento, FUN = median), y = rendimiento)) +
-  geom_boxplot(fill = "skyblue", alpha = 0.8) +
+  geom_boxplot(fill = "darkred", alpha = 0.8) +
   coord_flip(ylim = rango_rendimiento) + 
   labs(
     title = "DESPUÉS de Eliminar Outliers (Método Z-Score)",
@@ -240,30 +239,40 @@ Una vez que mapeamos la procedencia de nuestros datos, el siguiente paso es anal
 **Explicación del código:**
 *Utilizamos ggplot2 para generar un diagrama de cajas (geom_boxplot) por cada departamento. La función reorder() ordena los departamentos en el eje X según su rendimiento mediano, lo que facilita una comparación visual inmediata del desempeño. Finalmente, scale_fill_manual() aplica la paleta de colores del espectro rojo para mantener la consistencia visual del informe.*
 ```{r}
-
 deptos_ordenados <- Datos_ImputR %>%
   group_by(departamento) %>%
   summarise(mediana_rendimiento = median(rendimiento, na.rm = TRUE)) %>%
   arrange(mediana_rendimiento) %>%
   pull(departamento)
-paleta_rojos <- colorRampPalette(brewer.pal(9, "Reds"))(length(deptos_ordenados))
-datos_para_hc <- Datos_ImputR %>%
-  mutate(departamento = factor(departamento, levels = deptos_ordenados))
-p6 <- hchart(
-  datos_para_hc,
-  "boxplot",
-  hcaes(x = departamento, y = rendimiento, group = departamento)
-) %>%
-  hc_colors(paleta_rojos) %>%
-  hc_title(
-    text = "<b style='color:#8B0000; font-size:18px;'>4.2. Comportamiento del Rendimiento del Maíz por Departamento</b>"
-  ) %>%
-  hc_xAxis(title = list(text = "Departamento")) %>%
-  hc_yAxis(title = list(text = "Rendimiento (Toneladas/Hectárea)")) %>%
-  hc_legend(enabled = FALSE) %>%
-  hc_chart(backgroundColor = "transparent")
-p6
 
+paleta_rojos_ordenada <- brewer.pal(n = length(deptos_ordenados), name = "Reds")
+names(paleta_rojos_ordenada) <- deptos_ordenados
+
+p_boxplot <- ggplot(Datos_ImputR, aes(
+  x = reorder(departamento, rendimiento, FUN = median),
+  y = rendimiento,
+  fill = departamento
+)) +
+  geom_boxplot(outlier.alpha = 0.4) +
+  scale_fill_manual(values = paleta_rojos_ordenada) +
+  labs(
+    title = "4.2. Comportamiento del Rendimiento del Maíz por Departamento",
+    x = "Departamento",
+    y = "Rendimiento (Toneladas/Hectárea)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(
+      color = "darkred",   
+      size = 12,         
+      face = "bold",       
+      hjust = 0.5          
+    )
+  )
+p6 <- ggplotly(p_boxplot)
+p6
 ```
 
 **Análisis de los Resultados**
@@ -322,7 +331,7 @@ p8 <- highchart() %>%
 p8
 ```
 **Análisis de los Resultados**
-*[Espacio para su análisis e interpretación. ¿Qué departamentos mejoraron su rendimiento en esa década? ¿Alguno empeoró? ¿Qué cambios importantes se observan?]*
+*la tendencia anual del rendimiento mediano revela dinámicas de producción marcadamente diferentes entre los departamentos. Mientras Valle del Cauca mantiene un rendimiento consistentemente alto pero volátil, la historia principal es la de Huila, que demuestra una clara y sostenida tendencia de crecimiento hasta posicionarse como el líder en productividad al final del periodo, alcanzando el pico más alto del análisis en 2016. En contraste, observamos que Santander, Antioquia y Cundinamarca presentan un comportamiento mayormente estancado en niveles de rendimiento inferiores, sin mejoras significativas durante la década. Notablemente, la caída sincronizada del rendimiento en varias regiones alrededor de los años 2011-2012 sugiere fuertemente el impacto de un evento generalizado, probablemente de naturaleza climática, que afectó al sector a nivel nacional.*
 
 #### **Tablero Gráfico Resumen**
 Para la toma de decisiones estratégicas, los directivos necesitan una visión global y rápida. Este tablero de mando consolida nuestros hallazgos más importantes en una sola vista.
@@ -351,7 +360,7 @@ browsable(
 Mientras que los gráficos nos dan la intuición, las decisiones de negocio requieren los números detrás de las imágenes. Esta tabla proporciona las estadísticas descriptivas precisas.
 
 **Explicación del código:**
-*table1() es una potente función que genera tablas con calidad de publicación. Con una simple fórmula (~ rendimiento | departamento), obtenemos un resumen estadístico completo, desglosado por departamento.*
+*table1() es una potente función que genera tablas con calidad de publicación. Con una simple fórmula (~ rendimiento | departamento), obtenemos un resumen estadístico completo, desglosado por departamento, que nos permite comparar numéricamente sus características.*
 
 ```{r}
 table1(~ rendimiento | departamento, data = Datos_ImputR, topclass="Rtable1-zebra")
