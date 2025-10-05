@@ -22,8 +22,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 ### **Resumen**
 
-En este informe se documenta el viaje de transformar un conjunto de datos brutos de las Evaluaciones Agropecuarias Municipales (EVA) en inteligencia de negocio para una empresa agrícola líder. El objetivo es caracterizar la producción de Maíz, estandarizando la información y corrigiendo inconsistencias para construir una base sólida que permita identificar los departamentos más productivos, detectar anomalías significativas y descubrir las tendencias que definirán las estrategias futuras de la compañía.
-
+En este informe, transformamos un conjunto de datos brutos de las Evaluaciones Agropecuarias Municipales (EVA) en inteligencia de negocio. Realizamos un preprocesamiento exhaustivo de los datos de Maíz, que incluyó limpieza, imputación de datos faltantes con MICE y un tratamiento objetivo de outliers para construir una base de datos robusta. El análisis exploratorio reveló distintas trayectorias de rendimiento entre los departamentos, destacando el impresionante crecimiento de Huila hasta alcanzar el liderazgo, la alta productividad del Valle del Cauca, y el estancamiento de otras regiones clave. El resultado final es un conjunto de conclusiones estratégicas sobre las tendencias y oportunidades regionales para la compañía.
 
 ### **Introducción**
 
@@ -137,7 +136,7 @@ ggplot(datos_todos, aes(x = departamento, y = rendimiento, fill = metodo_imputac
   theme(plot.title = element_text(face = "bold", color = "darkred", hjust = 0.5))
 ```
 **Análisis de los Resultados**
-*Se observó que las distribuciones de rendimiento para cada departamento eran prácticamente idénticas en los tres casos. Esta falta de variación se explica por la baja proporción de datos faltantes en el conjunto de datos (aproximadamente un 1%). Como regla general, cuando la cantidad de datos faltantes es inferior al 5%, el riesgo de introducir un sesgo significativo en los resultados es bajo, independientemente del método que se elija. A pesar de que el impacto fue insignificante, se optó por utilizar la imputación con MICE como método definitivo para conservar la totalidad de los registros, asegurando un conjunto de datos completo y robusto. El resultado es Datos_ImputR, nuestro set de datos final: completo, limpio y confiable para el análisis.*
+*Se observó que las distribuciones de rendimiento para cada departamento eran prácticamente idénticas en los tres casos. Esta falta de variación se explica por la baja proporción de datos faltantes en el conjunto de datos (aproximadamente un 0.2%). Como regla general, cuando la cantidad de datos faltantes es inferior al 5%, el riesgo de introducir un sesgo significativo en los resultados es bajo, independientemente del método que se elija. A pesar de que el impacto fue insignificante, se optó por utilizar la imputación con MICE como método definitivo para conservar la totalidad de los registros, asegurando un conjunto de datos completo y robusto. El resultado es Datos_ImputR, nuestro set de datos final: completo, limpio y confiable para el análisis.*
 
 #### **Tratamiento Final de Outliers: Filtrado por Desviación Estándar**
 
