@@ -1,5 +1,5 @@
 ---
-title: "ANÁLISIS ESTADÍSTICO PRODUCCIÓN MAÍZ"
+title: "ANÁLISIS ESTADÍSTICO PRODUCCIÓN DE MAÍZ"
 author: 
   - JHON SEBASTIAN VALENCIA URBANO - 2456780
   - JHON JAIRO PANTOJA ALVAREZ - 2355359
@@ -62,7 +62,6 @@ nuevos_nombres <- c("departamento", "municipio", "grupo", "cultivo", "año",
                     "area_sembrada", "area_cosechada", "t_produccion",
                     "estado_fisico", "ciclo_cultivo")
 names(datos) <- nuevos_nombres
-
 datos <- datos %>% 
   select(-ciclo_cultivo, -estado_fisico, -grupo)
 ```
@@ -81,9 +80,7 @@ Producir mucho no es sinónimo de ser eficiente. La empresa necesita una métric
     rendimiento = case_when(
       is.na(t_produccion) | is.na(area_cosechada) ~ NA_real_,
       area_cosechada == 0 ~ 0,
-      TRUE ~ t_produccion / area_cosechada
-    )
-  )
+      TRUE ~ t_produccion / area_cosechada))
 ```
 #### **Identificación de Datos Faltantes**
 
@@ -93,10 +90,8 @@ Antes de poder limpiar o modelar, un analista debe actuar como un detective. El 
 *Se utilizan tres herramientas complementarias. Primero, summary() nos da un conteo rápido y numérico de los NAs en cada columna. Segundo, vis_miss() del paquete naniar genera una "radiografía" visual de la base de datos, permitiéndonos identificar patrones de datos faltantes de un solo vistazo. Finalmente, con filter(), extraemos y creamos una tabla específica con las filas exactas donde nuestra variable de interés, rendimiento, tiene información faltante, para una inspección detallada.*
 
 ```{r message=TRUE}
-# 1. Resumen numérico de datos faltantes
-table1(~ area_sembrada + area_cosechada + t_produccion + rendimiento | departamento, 
+table1(~ area_sembrada + area_cosechada + t_produccion + rendimiento | departamento,
        data = datos)
-
 datos %>%
   filter(is.na(rendimiento)) %>%
   select(-rendimiento) %>% 
@@ -110,13 +105,10 @@ datos %>%
 Para asegurar la calidad del análisis, se evaluó el impacto de diferentes estrategias para el tratamiento de los datos faltantes. Se realizó una comparación visual (mediante diagramas de caja) de las distribuciones de rendimiento bajo tres escenarios: eliminando los registros faltantes, imputando con la media por departamento y usando una imputación múltiple con MICE.
 
 ```{r message=TRUE}
-# 1. Estandarizar texto a mayúsculas
 datos <- datos %>% 
   mutate(departamento = str_to_upper(departamento))
-#omitir datos
 datos_limpios <- datos %>%
   filter(!is.na(datos$rendimiento))
-#imputar por departamento
 datos_imputados <- datos %>%
   group_by(departamento) %>%
   mutate(
@@ -127,15 +119,12 @@ datos_imputados <- datos %>%
     )
   ) %>%
   ungroup()
-# Imputación de datos faltantes con MICE
 imputR <- mice(datos, m = 5,method = "pmm", maxit = 5, seed = 123, print = FALSE) 
 Datos_ImputR <- complete(imputR)
-
 datos_todos <- bind_rows(
   datos_limpios %>% mutate(metodo_imputacion = "Sin NA"),
   datos_imputados %>% mutate(metodo_imputacion = "Imputacion Dept"),
-  Datos_ImputR %>% mutate(metodo_imputacion = "Mice")
-)
+  Datos_ImputR %>% mutate(metodo_imputacion = "Mice"))
 ggplot(datos_todos, aes(x = departamento, y = rendimiento, fill = metodo_imputacion)) +
   geom_boxplot(position = position_dodge(width = 0.8), outlier.alpha = 0.3) +
   labs(
@@ -146,7 +135,6 @@ ggplot(datos_todos, aes(x = departamento, y = rendimiento, fill = metodo_imputac
   scale_fill_manual(values = c("Sin NA" = "#781C2E", "Imputacion Dept" = "#E86C1F", "Mice" = "#FFB347")) +
   theme_minimal(base_size = 12) +
   theme(plot.title = element_text(face = "bold", color = "darkred", hjust = 0.5))
-
 ```
 **Análisis de los Resultados**
 *Se observó que las distribuciones de rendimiento para cada departamento eran prácticamente idénticas en los tres casos. Esta falta de variación se explica por la baja proporción de datos faltantes en el conjunto de datos (aproximadamente un 1%). Como regla general, cuando la cantidad de datos faltantes es inferior al 5%, el riesgo de introducir un sesgo significativo en los resultados es bajo, independientemente del método que se elija. A pesar de que el impacto fue insignificante, se optó por utilizar la imputación con MICE como método definitivo para conservar la totalidad de los registros, asegurando un conjunto de datos completo y robusto. El resultado es Datos_ImputR, nuestro set de datos final: completo, limpio y confiable para el análisis.*
@@ -162,7 +150,6 @@ Para esto, optamos por utilizar el método del Z-score (o regla de las 3 desviac
 
 ```{r}
 filas_originales <- nrow(Datos_ImputR)
-
 Datos_Sin_Outliers_ZScore <- Datos_ImputR %>%
   group_by(departamento) %>%
   mutate(
@@ -174,11 +161,8 @@ Datos_Sin_Outliers_ZScore <- Datos_ImputR %>%
   filter(rendimiento >= limite_inferior & rendimiento <= limite_superior) %>%
   ungroup() %>%
   select(-media_depto, -sd_depto, -limite_superior, -limite_inferior)
-
 filas_finales <- nrow(Datos_Sin_Outliers_ZScore)
-
 rango_rendimiento <- range(Datos_ImputR$rendimiento, na.rm = TRUE)
-
 p1 <- ggplot(Datos_ImputR, aes(x = reorder(departamento, rendimiento, FUN = median), y = rendimiento)) +
   geom_boxplot(fill = "#E86C1F", alpha = 0.8) +
   coord_flip(ylim = rango_rendimiento) +
@@ -188,7 +172,6 @@ p1 <- ggplot(Datos_ImputR, aes(x = reorder(departamento, rendimiento, FUN = medi
     y = "Rendimiento (Ton/Ha)"
   ) +
   theme_minimal()
-
 p2 <- ggplot(Datos_Sin_Outliers_ZScore, aes(x = reorder(departamento, rendimiento, FUN = median), y = rendimiento)) +
   geom_boxplot(fill = "darkred", alpha = 0.8) +
   coord_flip(ylim = rango_rendimiento) + 
@@ -198,12 +181,9 @@ p2 <- ggplot(Datos_Sin_Outliers_ZScore, aes(x = reorder(departamento, rendimient
     y = "Rendimiento (Ton/Ha)"
   ) +
   theme_minimal()
-
 p1 / p2
-
 Datos_ImputR <- Datos_Sin_Outliers_ZScore
 ```
-
 
 ### **Extrayendo las Respuestas**
 
@@ -223,8 +203,7 @@ p5 <- plot_ly(datos_freq,
               type = "pie",
               marker = list(colors = paleta_rojos, 
                             line = list(color = '#FFFFFF', width = 1))) %>%
-  layout(title = list(text = "<b> 4.1. Distribución de la muestra por Departamento</b>",
-                      font = list(color = "darkred", size = 15), x = 0.5, xanchor = "center"))
+  layout(title = list(text = "<b> 4.1. Distribución de la muestra por Departamento</b>", font = list(color = "darkred", size = 15), x = 0.5, xanchor = "center"))
 p5
 ```
 **Análisis de los Resultados**
@@ -244,10 +223,8 @@ deptos_ordenados <- Datos_ImputR %>%
   summarise(mediana_rendimiento = median(rendimiento, na.rm = TRUE)) %>%
   arrange(mediana_rendimiento) %>%
   pull(departamento)
-
 paleta_rojos_ordenada <- brewer.pal(n = length(deptos_ordenados), name = "Reds")
 names(paleta_rojos_ordenada) <- deptos_ordenados
-
 p_boxplot <- ggplot(Datos_ImputR, aes(
   x = reorder(departamento, rendimiento, FUN = median),
   y = rendimiento,
@@ -268,9 +245,7 @@ p_boxplot <- ggplot(Datos_ImputR, aes(
       color = "darkred",   
       size = 12,         
       face = "bold",       
-      hjust = 0.5          
-    )
-  )
+      hjust = 0.5))
 p6 <- ggplotly(p_boxplot)
 p6
 ```
@@ -288,7 +263,6 @@ El negocio no es estático. Para entender el presente, debemos mirar al pasado. 
 
 ```{r }
 datos_comparacion <- Datos_ImputR %>% filter(año %in% c(2007, 2017)) %>% group_by(departamento, año) %>% summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')
-
 p7 <- datos_comparacion %>%
   hchart("column", 
          hcaes(x = departamento, y = rendimiento_mediano, group = año)) %>%
@@ -315,8 +289,7 @@ Esta visualización nos cuenta la historia completa a través del tiempo. ¿Qué
 ```{r }
 tendencia_anual <- Datos_ImputR %>%
   group_by(año, departamento) %>%
-  summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = 'drop')
-
+  summarise(rendimiento_mediano = median(rendimiento, na.rm = TRUE), .groups = "drop")
 p8 <- highchart() %>%
   hc_title(text = "<b> 4.4. Tendencia Anual del Rendimiento por Departamento <b/>") %>%
   hc_xAxis(title = list(text = "Año"),
@@ -334,10 +307,10 @@ p8
 *la tendencia anual del rendimiento mediano revela dinámicas de producción marcadamente diferentes entre los departamentos. Mientras Valle del Cauca mantiene un rendimiento consistentemente alto pero volátil, la historia principal es la de Huila, que demuestra una clara y sostenida tendencia de crecimiento hasta posicionarse como el líder en productividad al final del periodo, alcanzando el pico más alto del análisis en 2016. En contraste, observamos que Santander, Antioquia y Cundinamarca presentan un comportamiento mayormente estancado en niveles de rendimiento inferiores, sin mejoras significativas durante la década. Notablemente, la caída sincronizada del rendimiento en varias regiones alrededor de los años 2011-2012 sugiere fuertemente el impacto de un evento generalizado, probablemente de naturaleza climática, que afectó al sector a nivel nacional.*
 
 #### **Tablero Gráfico Resumen**
-Para la toma de decisiones estratégicas, los directivos necesitan una visión global y rápida. Este tablero de mando consolida nuestros hallazgos más importantes en una sola vista.
+Para la toma de decisiones estratégicas, los directivos necesitan una visión global, consolidada y rápida. En lugar de presentar nuestros hallazgos como una secuencia de gráficos individuales, los integramos en un único tablero de mando interactivo. Esta herramienta consolida nuestros análisis más importantes —desde la distribución de la muestra hasta la comparación y evolución del rendimiento— en una sola vista, permitiendo a la dirección explorar los datos y conectar las conclusiones de forma intuitiva.
 
 **Explicación del código:**
-*La librería patchwork nos permite componer un tablero combinando nuestros gráficos (g1, g2, g4) con una sintaxis simple e intuitiva (+ y /), como si armáramos un rompecabezas.*
+*Para construir este tablero, utilizamos las herramientas de htmltools. La función tagList() actúa como un contenedor principal para nuestros elementos. Dentro de ella, bscols() nos permite organizar los gráficos en un sistema de filas y columnas basado en una cuadrícula de 12 unidades. Primero, creamos una fila para el gráfico p5 que ocupa el ancho completo (widths = c(12)). Luego, una segunda fila que se divide en dos columnas de igual tamaño (widths = c(6, 6)) para los gráficos p6 y p7. Finalmente, div() crea una tercera fila para el gráfico p8, añadiendo un pequeño margen superior para una mejor separación visual. El resultado es un diseño de informe profesional y organizado.*
 
 ```{r}
 browsable(
@@ -360,10 +333,71 @@ browsable(
 Mientras que los gráficos nos dan la intuición, las decisiones de negocio requieren los números detrás de las imágenes. Esta tabla proporciona las estadísticas descriptivas precisas.
 
 **Explicación del código:**
-*table1() es una potente función que genera tablas con calidad de publicación. Con una simple fórmula (~ rendimiento | departamento), obtenemos un resumen estadístico completo, desglosado por departamento, que nos permite comparar numéricamente sus características.*
+*Para obtener un resumen estadístico detallado, creamos una plantilla de renderizado personalizada para la función table1(). Esta plantilla le da instrucciones a la función para que, por cada variable numérica, calcule y muestre explícitamente la Media, Desviación Estándar, Varianza, Mediana con sus cuartiles, y el Rango. Luego, aplicamos esta plantilla a nuestra variable rendimiento, agrupando los resultados por departamento para generar la tabla comparativa final.*
 
 ```{r}
-table1(~ rendimiento | departamento, data = Datos_ImputR, topclass="Rtable1-zebra")
+render.nuevo <- function(x) {
+  media    <- mean(x, na.rm = TRUE)
+  desv_est <- sd(x, na.rm = TRUE)
+  varianza <- var(x, na.rm = TRUE)
+  mediana  <- median(x, na.rm = TRUE)
+  q1       <- quantile(x, 0.25, na.rm = TRUE)
+  q3       <- quantile(x, 0.75, na.rm = TRUE)
+  min_val  <- min(x, na.rm = TRUE)
+  max_val  <- max(x, na.rm = TRUE)
+  c(
+    "",
+    "Media"                 = format(round(media, 2), nsmall = 2),
+    "Desviación Estándar"   = format(round(desv_est, 2), nsmall = 2),
+    "Varianza"              = format(round(varianza, 2), nsmall = 2),
+    "Mediana [Q1, Q3]"      = sprintf("%s [%s, %s]", 
+                                    format(round(mediana, 2), nsmall = 2), 
+                                    format(round(q1, 2), nsmall = 2), 
+                                    format(round(q3, 2), nsmall = 2)),
+    "Rango (Mín - Máx)"     = sprintf("%s - %s", 
+                                    format(round(min_val, 2), nsmall = 2), 
+                                    format(round(max_val, 2), nsmall = 2))
+  )
+}
+table1(~ rendimiento | departamento, 
+       data = Datos_ImputR, 
+       topclass="Rtable1-zebra",
+       render.continuous = render.nuevo)
 ```
 **Análisis de los Resultados**
-*[Espacio para su análisis e interpretación de la tabla. Puede comparar directamente la media y la desviación estándar entre departamentos, o comentar sobre los rangos (mínimo y máximo) para reforzar las conclusiones de los boxplots.]*
+*La tabla cuantifica nuestras observaciones visuales y revela tres conclusiones clave. Primero, confirma el ranking de rendimiento: Valle del Cauca y Huila son los líderes indiscutibles con una mediana idéntica de 3.00 Ton/Ha, muy por encima de los demás. Segundo, la tabla nos da la prueba numérica del impacto de los outliers: en Antioquia, Cundinamarca y Santander, la media es notablemente superior a la mediana (ej. Santander: Media 1.92 vs. Mediana 1.80), confirmando que los valores atípicos "inflan" el promedio. Finalmente, la variabilidad queda claramente expuesta: Valle del Cauca tiene una Varianza (4.85) y Desviación Estándar (2.20) masivas en comparación con los otros departamentos, lo que demuestra numéricamente que su producción, aunque alta, es la más inconsistente o diversa.*
+
+### **Conclusión**
+
+Nuestro viaje a través de los datos de las Evaluaciones Agropecuarias Municipales comenzó con un objetivo claro: realizar un análisis exploratorio para transformar un conjunto de datos brutos en una narrativa coherente que pudiera guiar las decisiones estratégicas de la empresa. Lo que encontramos fue una historia fascinante, demostrando lo hermosa y compleja que puede ser esta gran labor de análisis.
+
+El preprocesamiento, desde la estandarización de nombres hasta la robusta imputación de datos faltantes y el cuidadoso análisis de valores atípicos, no fue un mero ejercicio técnico, sino el pilar fundamental que nos permitió construir una base de datos confiable. Fue solo a través de este riguroso proceso que pudimos escuchar lo que los datos realmente tenían que decir.
+
+A través de nuestras visualizaciones y análisis, los datos nos revelaron tres realidades productivas distintas. Descubrimos que Valle del Cauca no es solo un líder en rendimiento, sino un departamento con una alta variabilidad inherente donde la excelencia es parte de la norma. Vimos la impresionante trayectoria de crecimiento de Huila, que lo posicionó como un competidor de primer nivel y un caso de éxito en mejora continua. Y, quizás lo más importante, caracterizamos a Antioquia, Cundinamarca y Santander como regiones de rendimiento típico modesto, pero con "bolsas" de éxito excepcional que se manifestaron como outliers, representando oportunidades clave para el aprendizaje y la replicación de buenas prácticas.
+
+### **Referencias**
+Barrett, D. (2021). table1: Tables of Descriptive Statistics in HTML. R package version 1.4.2. https://github.com/benjamin-sabord/table1
+
+Bermudez Vera, I. M. (2025). Evaluaciones Agropecuarias Municipales - EVA (eva_df_2025.xls) [Conjunto de datos]. Curso de Gestión de Datos, Escuela de Estadística, Universidad del Valle.
+
+Cheng, J., & Sievert, C. (2021). crosstalk: Inter-Widget Interactivity for HTML. R package version 1.2.0. https://rstudio.github.io/crosstalk/
+
+Kunst, J. B. (2017). highcharter: A Wrapper for the 'Highcharts' Library. R package version 0.5.0. http://jkunst.com/highcharter/
+
+Neuwirth, E. (2022). RColorBrewer: ColorBrewer Palettes. R package version 1.1-3.
+
+Pedersen, T. L. (2020). patchwork: The Composer of Plots. R package version 1.1.1. https://patchwork.data-imaginist.com
+
+R Core Team (2025). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. https://www.R-project.org/.
+
+Sievert, C. (2020). Interactive Web-Based Data Visualization with R, plotly, and shiny. Chapman and Hall/CRC. https://plotly-r.com
+
+Tierney, N., & Cook, D. (2023). naniar: Data Structures, Summaries, and Visualisations for Missing Data. R package version 1.0.0. https://njtierney.github.io/naniar/
+
+van Buuren, S., & Groothuis-Oudshoorn, K. (2011). mice: Multivariate Imputation by Chained Equations in R. Journal of Statistical Software, 45(3), 1–67. https://www.jstatsoft.org/v45/i03/.
+
+Wickham, H., Averick, M., Bryan, J., Chang, W., McGowan, L. D., François, R., Grolemund, G., Hayes, A., Henry, L., Hester, J., Kuhn, M., Pedersen, T. L., Miller, E., Bache, S. M., Müller, K., Ooms, J., Robinson, D., Seidel, D. P., Spinu, V., … Yutani, H. (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686. https://doi.org/10.21105/joss.01686.
+
+Wickham, H., & Bryan, J. (2023). readxl: Read Excel Files. R package version 1.4.3. https://readxl.tidyverse.org
+
+Zhu, H. (2021). kableExtra: Construct Complex Table with 'kable' and Pipe Syntax. R package version 1.3.4. http://haozhu233.github.io/kableExtra/
